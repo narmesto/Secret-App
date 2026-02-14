@@ -18,6 +18,7 @@ function RouteGate() {
 
     // public routes (no auth required)
     const isLogin = pathname === "/login";
+    const isRegister = pathname === "/register";
     const isCheckEmail = pathname.startsWith("/check-email");
 
     // protected areas
@@ -25,13 +26,13 @@ function RouteGate() {
     const inEvent = pathname.startsWith("/event");
 
     // logged out: block protected routes
-    if (!user && (inTabs || inEvent) && !isLogin && !isCheckEmail) {
+    if (!user && (inTabs || inEvent) && !isLogin && !isRegister && !isCheckEmail) {
       router.replace("/login");
       return;
     }
 
     // logged in: block login-ish routes
-    if (user && (isLogin || isCheckEmail)) {
+    if (user && (isLogin || isRegister || isCheckEmail)) {
       router.replace("/(tabs)/home");
       return;
     }

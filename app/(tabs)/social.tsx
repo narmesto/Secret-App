@@ -8,6 +8,7 @@ import {
   Image,
   Modal,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -162,6 +163,13 @@ export default function SocialScreen() {
   const softBorder = isDark ? "rgba(255,255,255,0.14)" : "rgba(17,17,24,0.10)";
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await init();
+    setRefreshing(false);
+  }, [user?.id]);
 
   // inbox (friend requests)
   const [inboxOpen, setInboxOpen] = useState(false);
@@ -196,11 +204,9 @@ export default function SocialScreen() {
       setRequests([]);
       setDmThreads([]);
       setThreads([]);
-      setLoading(false);
       return;
     }
 
-    setLoading(true);
     try {
       await Promise.all([fetchFriendRequests(), fetchDMThreads(), fetchCombinedThreads()]);
     } finally {
@@ -633,34 +639,39 @@ export default function SocialScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
-      {/* header */}
-      <View style={styles.header}>
-        <View style={{ width: 34, height: 34 }} />
-        <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fonts.display }]}>social</Text>
+      <ScrollView
+        contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          {/* Invisible spacer to balance the layout */}
+          <View style={{ width: 80 }} />
 
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <Pressable
-            style={[styles.headerBtn, { backgroundColor: colors.card2, borderColor: colors.border }]}
-            onPress={init}
-          >
-            <Ionicons name="refresh" size={16} color={isDark ? "#fff" : colors.text} />
-          </Pressable>
+          <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fonts.display }]}>
+            social
+          </Text>
 
-          <Pressable
-            style={[styles.headerBtn, { backgroundColor: colors.card2, borderColor: colors.border }]}
-            onPress={() => setInboxOpen(true)}
-          >
-            <Ionicons name="mail-outline" size={16} color={isDark ? "#fff" : colors.text} />
-            {pendingCount > 0 ? (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{pendingCount > 99 ? "99+" : String(pendingCount)}</Text>
-              </View>
-            ) : null}
-          </Pressable>
+          <View style={{ flexDirection: "row", gap: 10, width: 80, justifyContent: "flex-end" }}>
+            <Pressable
+              onPress={() => router.push("/social/create-group" as any)}
+              style={[styles.headerBtn, { borderColor: colors.border, backgroundColor: colors.card2 }]}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={colors.text} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.push("/social/inbox" as any)}
+              style={[styles.headerBtn, { borderColor: colors.border, backgroundColor: colors.card2 }]}
+            >
+              <Ionicons name="mail-outline" size={18} color={colors.text} />
+              {pendingCount > 0 && <View style={styles.badge} />}
+            </Pressable>
+          </View>
         </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* TOP SEARCH */}
         <View style={[styles.searchWrap, { backgroundColor: glass, borderColor: softBorder }]}>
           <Ionicons name="search" size={16} color={colors.muted} />

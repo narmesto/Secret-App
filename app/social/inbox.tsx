@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -32,12 +33,14 @@ export default function InboxScreen() {
   const softBorder = isDark ? "rgba(255,255,255,0.14)" : "rgba(17,17,24,0.10)";
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [friendships, setFriendships] = useState<FriendshipRow[]>([]);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
 
-    setLoading(true);
+    // Only set main loading spinner on first load
+    if (!refreshing) setLoading(true);
 
     const { data, error } = await supabase
       .from("friendships")
@@ -48,7 +51,13 @@ export default function InboxScreen() {
 
     setFriendships((data ?? []) as any);
     setLoading(false);
-  }, [user?.id]);
+  }, [user?.id, refreshing]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
   useFocusEffect(
     useCallback(() => {
@@ -101,7 +110,13 @@ export default function InboxScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
+      >
         {/* header */}
         <View style={styles.header}>
           <Pressable
@@ -113,12 +128,7 @@ export default function InboxScreen() {
 
           <Text style={[styles.headerTitle, { color: colors.text, fontFamily: fonts.display }]}>inbox</Text>
 
-          <Pressable
-            onPress={load}
-            style={[styles.headerBtn, { borderColor: colors.border, backgroundColor: colors.card2 }]}
-          >
-            <Ionicons name="refresh" size={16} color={colors.text} />
-          </Pressable>
+          <View style={{ width: 36 }} />
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.card2, borderColor: colors.border }]}>

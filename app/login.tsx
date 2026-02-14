@@ -54,37 +54,6 @@ export default function Login() {
     }
   }
 
-  async function signUp() {
-    const e = cleanEmail();
-    if (!e.includes("@")) return Alert.alert("Enter a valid email");
-    if (password.length < 6) return Alert.alert("Password must be at least 6 characters");
-
-    setBusy(true);
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: e,
-        password,
-        options: {
-          // ✅ Option B: deep link back into the app after email confirmation
-          emailRedirectTo: "gatherapp://login",
-        },
-      });
-
-      if (error) return Alert.alert("Sign up failed", error.message);
-
-      // If confirmations are enabled, session will be null until confirmed
-      if (!data.session) {
-        router.replace(`/check-email?email=${encodeURIComponent(e)}` as any);
-        return;
-      }
-
-      // If confirmations are disabled, user is signed in immediately
-      router.replace("/(tabs)/home" as any);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={styles.wrap}>
@@ -122,7 +91,7 @@ export default function Login() {
         </Pressable>
 
         <Pressable
-          onPress={signUp}
+          onPress={() => router.push("/register" as any)}
           disabled={busy}
           style={[styles.btnAlt, { borderColor: border, opacity: busy ? 0.6 : 1 }]}
         >

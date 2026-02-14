@@ -88,9 +88,45 @@ export default function DMConversation() {
 
   useEffect(() => {
     if (!threadId) return;
+    
+    // 1. Initial fetch
     fetchMessages().then(() => {
       setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 60);
     });
+
+    // 2. Realtime subscription
+    const channel = supabase
+      .channel(`dm-thread-${threadId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "dm_messages",
+          filter: `thread_id=eq.${threadId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as DMMessage;
+          setMsgs((prev) => {
+            // Avoid duplicates if we inserted it optimistically or fetched it already
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+          
+          // Scroll to bottom when new message arrives
+          setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+        }
+      )
+      .subscribe((status) => {
+        console.log(`[Realtime] Subscription status for thread ${threadId}:`, status);
+        if (status === "SUBSCRIBED") {
+          console.log("Listening for new messages...");
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
 
@@ -182,16 +218,23 @@ export default function DMConversation() {
     setText("");
 
     try {
-      const { error } = await supabase.from("dm_messages").insert({
-        thread_id: threadId,
-        sender_id: user.id,
-        body,
-      });
+      const { data, error } = await supabase
+        .from("dm_messages")
+        .insert({
+          thread_id: threadId,
+          sender_id: user.id,
+          body,
+        })
+        .select()
+        .single();
 
       if (error) throw new Error(error.message);
 
-      await fetchMessages();
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 60);
+      // Optimistically add to list (Realtime will ignore duplicate ID)
+      if (data) {
+        setMsgs((prev) => [...prev, data as DMMessage]);
+        setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 60);
+      }
     } catch (e: any) {
       Alert.alert("send failed", e?.message ?? "something went wrong");
     } finally {
