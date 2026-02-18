@@ -32,7 +32,7 @@ function CreateTabButton(props: any) {
 }
 
 export default function TabLayout() {
-  const { colors, resolvedScheme } = useTheme();
+  const { colors, fonts, resolvedScheme } = useTheme();
   const isDark = resolvedScheme === "dark";
 
   const active = isDark ? "#ffffff" : colors.primary;
@@ -42,6 +42,16 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+
+        headerStyle: {
+          backgroundColor: colors.bg,
+        },
+        headerTintColor: colors.text,
+        headerTitleAlign: "center",
+        headerTitleStyle: {
+          fontFamily: fonts.display,
+          fontSize: 22,
+        },
 
         tabBarActiveTintColor: active,
         tabBarInactiveTintColor: inactive,
@@ -63,6 +73,7 @@ export default function TabLayout() {
         name="home"
         options={{
           title: "home",
+          headerShown: true,
           tabBarButton: (p) => <TabBarButton {...p} />,
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
@@ -72,6 +83,7 @@ export default function TabLayout() {
         name="social"
         options={{
           title: "social",
+          headerShown: true,
           tabBarButton: (p) => <TabBarButton {...p} />,
           tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />,
         }}
@@ -102,6 +114,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "profile",
+          headerShown: true,
           tabBarButton: (p) => <TabBarButton {...p} />,
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}

@@ -122,6 +122,7 @@ export default function EventDetail() {
   const [isRsvped, setIsRsvped] = useState(false);
   const [busySave, setBusySave] = useState(false);
   const [busyRsvp, setBusyRsvp] = useState(false);
+  const [friendSaveCount, setFriendSaveCount] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -141,7 +142,7 @@ export default function EventDetail() {
 
   async function init() {
     setLoading(true);
-    await Promise.all([fetchEvent(), fetchMoments(), fetchUserLocation()]);
+    await Promise.all([fetchEvent(), fetchMoments(), fetchUserLocation(), fetchFriendSaveCount()]);
     await Promise.all([fetchSavedState(), fetchRsvpState()]);
     setLoading(false);
   }
@@ -249,6 +250,39 @@ export default function EventDetail() {
     }
 
     setIsRsvped(!!data);
+  }
+
+  async function fetchFriendSaveCount() {
+    if (!user || !id) return;
+
+    // 1. Get friend IDs
+    const { data: friendsData, error: friendsError } = await supabase
+        .from("friendships")
+        .select("user_low, user_high")
+        .or(`user_low.eq.${user.id},user_high.eq.${user.id}`)
+        .eq("status", "accepted");
+
+    if (friendsError) {
+        console.error("[fetchFriendSaveCount] friends error:", friendsError.message);
+        return;
+    }
+
+    const friendIds = (friendsData || []).map((f: any) => (f.user_low === user.id ? f.user_high : f.user_low));
+    if (friendIds.length === 0) return;
+
+    // 2. Get saves for this event made by friends
+    const { data: savesData, error: savesError } = await supabase
+        .from("event_saves")
+        .select("user_id", { count: "exact" })
+        .eq("event_id", id)
+        .in("user_id", friendIds);
+
+    if (savesError) {
+        console.error("[fetchFriendSaveCount] saves error:", savesError.message);
+        return;
+    }
+
+    setFriendSaveCount(savesData?.length || 0);
   }
 
   async function toggleSave() {
@@ -437,10 +471,21 @@ export default function EventDetail() {
                   {formatWhen(event.start_time).toLowerCase()}
                 </Text>
 
-                <Text style={[styles.meta2, { fontFamily: fonts.body }]} numberOfLines={1}>
-                  {(event.location ?? "location tbd").toLowerCase()}
-                  {typeof milesAway === "number" ? ` • ${milesAway.toFixed(1)} mi` : ""}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Text style={[styles.meta2, { fontFamily: fonts.body }]} numberOfLines={1}>
+                    {(event.location ?? "location tbd").toLowerCase()}
+                    {typeof milesAway === "number" ? ` • ${milesAway.toFixed(1)} mi` : ""}
+                  </Text>
+                  {friendSaveCount > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 4 }}>
+                      <Text style={[styles.meta2, { fontFamily: fonts.body }]}>•</Text>
+                      <Ionicons name="people" size={12} color={"rgba(255,255,255,0.82)"} style={{ marginLeft: 4, marginRight: 2 }} />
+                      <Text style={[styles.meta2, { fontFamily: fonts.body }]}>
+                        {friendSaveCount}
+                      </Text>
+                    </View>
+                  )}
+                </View>
 
                 {/* tags */}
                 {categoryNames.length > 0 ? (

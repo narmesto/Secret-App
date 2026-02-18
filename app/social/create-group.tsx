@@ -16,13 +16,12 @@ import {
 import { useAuth } from "../../context/auth";
 import { useTheme } from "../../context/theme";
 import { supabase } from "../../supabase";
+import { Profile } from '@/types';
 
-type FriendRow = {
-  id: string;
-  display_name: string;
+type FriendRow = Omit<Profile, 'username'> & {
   username: string;
-  avatar_url: string | null;
   selected?: boolean;
+  score?: number;
 };
 
 export default function CreateGroupScreen() {
@@ -47,49 +46,59 @@ export default function CreateGroupScreen() {
     setLoading(true);
 
     // 1. Get accepted friendships
+    // We try a simplified query first to debug
     const { data: friendships, error: fErr } = await supabase
       .from("friendships")
-      .select("user_low, user_high")
+      .select("user_low, user_high, status")
       .eq("status", "accepted")
       .or(`user_low.eq.${user?.id},user_high.eq.${user?.id}`);
 
     if (fErr) {
       console.log("[create-group friendships error]", fErr.message);
+      Alert.alert("Error fetching friends", fErr.message);
       setLoading(false);
       return;
     }
 
+    const rows = (friendships as { user_low: string; user_high: string }[]) ?? [];
     const friendIds = Array.from(
       new Set(
-        (friendships ?? []).map((r: any) =>
+        rows.map((r) =>
           r.user_low === user?.id ? r.user_high : r.user_low
         )
       )
     );
 
     if (friendIds.length === 0) {
+      // console.log("No friends found for user:", user?.id);
       setFriends([]);
       setLoading(false);
       return;
     }
 
     // 2. Get profiles
+    // IMPORTANT: It seems 'username' column might be missing in your 'profiles' table.
+    // We will select only guaranteed columns. If you have a different column for username (e.g. handle), update it here.
     const { data: profiles, error: pErr } = await supabase
       .from("profiles")
-      .select("id, display_name, username, avatar_url")
+      .select("id, display_name, avatar_url")
       .in("id", friendIds)
       .order("display_name", { ascending: true });
 
     if (pErr) {
       console.log("[create-group profiles error]", pErr.message);
+      Alert.alert("Error fetching profiles", pErr.message);
       setLoading(false);
       return;
     }
 
+    const profileRows = (profiles as Profile[]) ?? [];
+
     setFriends(
-      (profiles ?? []).map((p: any) => ({
+      profileRows.map((p) => ({
         id: p.id,
         display_name: p.display_name || "User",
+        // Fallback or empty string if username column is missing
         username: p.username || "",
         avatar_url: p.avatar_url,
         selected: false,
@@ -139,9 +148,10 @@ export default function CreateGroupScreen() {
       if (pErr) throw new Error(pErr.message);
 
       // 3. Navigate to DM
+      // We pass the thread.id as the peerId placeholder, but the actual threadId param is what matters.
       router.replace({
         pathname: "/social/dm/[peerId]" as any,
-        params: { threadId: thread.id },
+        params: { peerId: thread.id, threadId: thread.id },
       });
     } catch (e: any) {
       Alert.alert("Error", e.message);
@@ -150,14 +160,32 @@ export default function CreateGroupScreen() {
     }
   }
 
-  const filteredFriends = friends.filter((f) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      f.display_name.toLowerCase().includes(q) ||
-      f.username.toLowerCase().includes(q)
-    );
-  });
+  const filteredFriends = friends
+    .map((f) => {
+      // Simple relevance score
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return { ...f, score: 0 };
+
+      const dName = (f.display_name || '').toLowerCase();
+      const uName = f.username.toLowerCase();
+
+      let score = -1; // -1 means no match
+
+      if (dName === q || uName === q) score = 100;
+      else if (dName.startsWith(q) || uName.startsWith(q)) score = 80;
+      else if (dName.includes(q) || uName.includes(q)) score = 50;
+
+      return { ...f, score };
+    })
+    .filter((f) => f.score !== -1) // Filter out non-matches
+    .sort((a, b) => {
+      // If scores are tied (e.g. both are 0 when no query), sort alphabetically
+      if (b.score === a.score) {
+        return (a.display_name || '').localeCompare(b.display_name || '');
+      }
+      // Otherwise sort by score descending (higher relevance first)
+      return b.score - a.score;
+    });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>

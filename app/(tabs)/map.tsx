@@ -383,7 +383,7 @@ export default function MapScreen() {
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
-        initialRegion={region}
+        initialRegion={region || undefined}
         customMapStyle={isDark ? DARK_STYLE : LIGHT_STYLE}
         showsUserLocation={!locationDenied}
         showsMyLocationButton={false}

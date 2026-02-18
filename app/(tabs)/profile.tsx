@@ -1,18 +1,18 @@
 // app/(tabs)/profile.tsx
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { router, useFocusEffect, useNavigation } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Pressable,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    View,
 } from "react-native";
 import { useAuth } from "../../context/auth";
 import { useTheme } from "../../context/theme";
@@ -278,11 +278,23 @@ export default function ProfileScreen() {
     }
   }, [user?.id, fetchFriendsCount]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadEverything();
-    }, [loadEverything])
-  );
+  const navigation = useNavigation();
+
+    useEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <Pressable onPress={loadEverything} style={{ marginRight: 12 }}>
+                    <Ionicons name="refresh" size={24} color={colors.primary} />
+                </Pressable>
+            ),
+        });
+    }, [navigation, colors, loadEverything]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadEverything();
+        }, [loadEverything])
+    );
 
   async function onSignOut() {
     try {
@@ -343,17 +355,6 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.miniHeader}>
-          <View style={{ width: 34, height: 34 }} />
-          <Text style={[styles.miniHeaderTitle, { color: colors.text, fontFamily: fonts.display }]}>profile</Text>
-          <Pressable
-            style={[styles.miniHeaderBtn, { backgroundColor: colors.card2, borderColor: colors.border }]}
-            onPress={loadEverything}
-          >
-            <Ionicons name="refresh" size={16} color={isDark ? "#fff" : colors.text} />
-          </Pressable>
-        </View>
-
         <View style={[styles.profileCard, { backgroundColor: colors.card2, borderColor: colors.border }]}>
           <Image source={{ uri: avatarUri }} style={styles.avatar} />
 

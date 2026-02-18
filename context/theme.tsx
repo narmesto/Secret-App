@@ -41,43 +41,43 @@ type ThemeValue = {
 const ThemeContext = createContext<ThemeValue | null>(null);
 
 // Keep your brand purple
-const PRIMARY = "#4908B0";
+const PRIMARY = "#000";
 
 // Clean / minimal surfaces (matches your desired vibe)
 const lightColors: ThemeColors = {
-  bg: "#F6F4F8",
+  bg: "#F7F7F7",
   card: "#FFFFFF",
   card2: "#FFFFFF",
 
-  text: "#14141A",
-  muted: "rgba(20,20,26,0.58)",
+  text: "#1C1C1E",
+  muted: "#8A8A8E",
 
-  border: "rgba(20,20,26,0.10)",
+  border: "#E5E5E5",
 
   primary: PRIMARY,
 
-  tabBarBg: "rgba(255,255,255,0.92)",
-  tabBarBorder: "rgba(20,20,26,0.08)",
+  tabBarBg: "#FFFFFF",
+  tabBarBorder: "#E5E5E5",
 };
 
 const darkColors: ThemeColors = {
-  bg: "#0B0B0E",
-  card: "rgba(255,255,255,0.06)",
-  card2: "rgba(255,255,255,0.08)",
+  bg: "#121212",
+  card: "#1E1E1E",
+  card2: "#282828",
 
-  text: "#FFFFFF",
-  muted: "rgba(255,255,255,0.62)",
+  text: "#fff",
+  muted: "#999",
 
-  border: "rgba(255,255,255,0.12)",
+  border: "#333",
 
   primary: PRIMARY,
 
-  tabBarBg: "rgba(14,14,18,0.85)",
-  tabBarBorder: "rgba(255,255,255,0.10)",
+  tabBarBg: "#121212",
+  tabBarBorder: "#333",
 };
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setMode] = useState<Mode>("system");
+  const [mode, setMode] = useState<Mode>("light");
 
   const sys = Appearance.getColorScheme() as ColorSchemeName;
   const resolvedScheme: "light" | "dark" =

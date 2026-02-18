@@ -1,42 +1,29 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { router, useLocalSearchParams, Stack } from "expo-router";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../../context/auth";
 import { useTheme } from "../../../context/theme";
 import { supabase } from "../../../supabase";
-
-type ProfileLite = {
-  id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-};
-
-type DMMessage = {
-  id: string;
-  thread_id: string;
-  sender_id: string;
-  body: string;
-  created_at: string;
-};
+import { Profile as ProfileLite, Message as DMMessage } from "@/types";
 
 function initialsAvatar(seed: string) {
-  return "https://api.dicebear.com/7.x/initials/png?seed=" + encodeURIComponent(seed);
+  return `https://api.dicebear.com/7.x/initials/png?seed=${encodeURIComponent(seed)}`;
 }
 
 function pair(a: string, b: string) {
@@ -44,15 +31,20 @@ function pair(a: string, b: string) {
   return { user_low: low, user_high: high };
 }
 
+type डीएमSearchParams = {
+  peerId?: string | string[];
+  id?: string | string[];
+};
+
 export default function DMConversation() {
   const { user } = useAuth();
   const { colors, resolvedScheme, fonts } = useTheme();
   const insets = useSafeAreaInsets();
   const isDark = resolvedScheme === "dark";
 
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<डीएमSearchParams>();
   const peerId = useMemo(() => {
-    const raw = (params as any)?.peerId ?? (params as any)?.id;
+    const raw = params.peerId ?? params.id;
     const v = Array.isArray(raw) ? raw[0] : raw;
     return String(v ?? "").trim();
   }, [params]);
@@ -70,67 +62,7 @@ export default function DMConversation() {
 
   const listRef = useRef<FlatList<DMMessage>>(null);
 
-  useEffect(() => {
-    if (!user?.id || !peerId) return;
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, peerId]);
-
-  async function init() {
-    setLoading(true);
-    try {
-      await fetchPeer();
-      await ensureThread();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!threadId) return;
-    
-    // 1. Initial fetch
-    fetchMessages().then(() => {
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 60);
-    });
-
-    // 2. Realtime subscription
-    const channel = supabase
-      .channel(`dm-thread-${threadId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "dm_messages",
-          filter: `thread_id=eq.${threadId}`,
-        },
-        (payload) => {
-          const newMsg = payload.new as DMMessage;
-          setMsgs((prev) => {
-            // Avoid duplicates if we inserted it optimistically or fetched it already
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
-          });
-          
-          // Scroll to bottom when new message arrives
-          setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-        }
-      )
-      .subscribe((status) => {
-        console.log(`[Realtime] Subscription status for thread ${threadId}:`, status);
-        if (status === "SUBSCRIBED") {
-          console.log("Listening for new messages...");
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [threadId]);
-
-  async function fetchPeer() {
+  const fetchPeer = useCallback(async () => {
     const { data, error } = await supabase
       .from("profiles")
       .select("id, display_name, avatar_url")
@@ -148,9 +80,9 @@ export default function DMConversation() {
     } else {
       setPeer({ id: peerId, display_name: "user", avatar_url: null });
     }
-  }
+  }, [peerId]);
 
-  async function ensureThread() {
+  const ensureThread = useCallback(async () => {
     if (!user?.id) return;
 
     const { user_low, user_high } = pair(user.id, peerId);
@@ -181,9 +113,25 @@ export default function DMConversation() {
     }
 
     if (created?.id) setThreadId(String(created.id));
-  }
+  }, [user?.id, peerId]);
 
-  async function fetchMessages() {
+  useEffect(() => {
+    if (!user?.id || !peerId) return;
+
+    async function init() {
+      setLoading(true);
+      try {
+        await fetchPeer();
+        await ensureThread();
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    init();
+  }, [user?.id, peerId, fetchPeer, ensureThread]);
+
+  const fetchMessages = useCallback(async () => {
     if (!threadId) return;
 
     const { data, error } = await supabase
@@ -199,13 +147,51 @@ export default function DMConversation() {
       return;
     }
 
-    setMsgs((data ?? []) as any);
-  }
+    setMsgs(data ?? []);
+  }, [threadId]);
+
+  useEffect(() => {
+    if (!threadId) return;
+
+    fetchMessages().then(() => {
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 60);
+    });
+
+    const channel = supabase
+      .channel(`dm-thread-${threadId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "dm_messages",
+          filter: `thread_id=eq.${threadId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as DMMessage;
+          setMsgs((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+
+          setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+        }
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          console.log(`[Realtime] Subscribed to thread ${threadId}`);
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [threadId, fetchMessages]);
 
   async function send() {
     if (!user?.id) {
       Alert.alert("sign in required");
-      router.push("/login" as any);
+      router.push("/login");
       return;
     }
     if (!threadId) return Alert.alert("not ready", "thread not created yet.");
@@ -230,7 +216,6 @@ export default function DMConversation() {
 
       if (error) throw new Error(error.message);
 
-      // Optimistically add to list (Realtime will ignore duplicate ID)
       if (data) {
         setMsgs((prev) => [...prev, data as DMMessage]);
         setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 60);
@@ -246,119 +231,115 @@ export default function DMConversation() {
   const avatar = peer?.avatar_url || initialsAvatar(name);
 
   function goViewProfile() {
-    // ✅ correct route push for your dynamic user profile page
-    router.push({ pathname: "/user/[id]" as any, params: { id: peerId } });
+    router.push({ pathname: "/user/[id]", params: { id: peerId } });
   }
 
-  // ✅ keep offset minimal so the composer sits right above the keyboard
-  // since header is small and in-flow, offset can be 0 on iOS
   const keyboardOffset = Platform.OS === "ios" ? 0 : 0;
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: colors.bg }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={keyboardOffset}
-      >
-        {/* back button */}
-        <View style={[styles.backRow, { paddingTop: insets.top + 6 }]}>
-          <Pressable
-            onPress={() => router.back()}
-            style={[styles.backBtn, { backgroundColor: glass, borderColor: border }]}
-          >
-            <Ionicons name="chevron-back" size={20} color={colors.text} />
-          </Pressable>
-        </View>
-
-        {/* ✅ centered header: smaller + higher, still grouped */}
-        <View style={styles.headerCenter}>
-          <Image source={{ uri: avatar }} style={styles.headerAvatar} />
-          <Text style={[styles.headerName, { color: colors.text, fontFamily: fonts.display }]} numberOfLines={1}>
-            {name}
-          </Text>
-          <Pressable
-            onPress={goViewProfile}
-            style={[styles.viewProfileBtn, { backgroundColor: "rgba(73,8,176,0.12)", borderColor: colors.border }]}
-          >
-            <Text style={[styles.viewProfileText, { color: colors.text, fontFamily: fonts.strong }]}>
-              view profile
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* messages */}
-        <View style={{ flex: 1 }}>
-          {loading ? (
-            <View style={styles.center}>
-              <ActivityIndicator />
-              <Text style={[styles.muted, { color: colors.muted, fontFamily: fonts.body }]}>loading…</Text>
-            </View>
-          ) : (
-            <FlatList
-              ref={listRef}
-              data={msgs}
-              keyExtractor={(m) => String(m.id)}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode={Platform.OS === "ios" ? "on-drag" : "none"}
-              contentContainerStyle={{
-                paddingHorizontal: 14,
-                paddingTop: 8,
-                paddingBottom: 12, // composer is in-flow now, so we don't fake space
-              }}
-              renderItem={({ item }) => {
-                const mine = item.sender_id === user?.id;
-                return (
-                  <View
-                    style={[
-                      styles.bubble,
-                      mine ? styles.bubbleMine : styles.bubbleTheirs,
-                      { borderColor: colors.border },
-                    ]}
-                  >
-                    <Text style={[styles.bubbleText, { color: mine ? "#fff" : colors.text, fontFamily: fonts.body }]}>
-                      {String(item.body ?? "").toLowerCase()}
-                    </Text>
-                  </View>
-                );
-              }}
-              onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-            />
-          )}
-        </View>
-
-        {/* ✅ composer is PART OF THE LAYOUT (not absolute) */}
-        <View style={[styles.composer, { borderTopColor: colors.border, paddingBottom: insets.bottom + 8 }]}>
-          <View style={[styles.inputWrap, { backgroundColor: glass, borderColor: border }]}>
-            <TextInput
-              value={text}
-              onChangeText={setText}
-              placeholder="message…"
-              placeholderTextColor={isDark ? "rgba(255,255,255,0.45)" : "rgba(17,17,24,0.45)"}
-              style={[styles.input, { color: colors.text, fontFamily: fonts.body }]}
-              multiline={false}
-              returnKeyType="send"
-              onSubmitEditing={send}
-              onFocus={() => setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80)}
-            />
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <KeyboardAvoidingView
+          style={{ flex: 1, backgroundColor: colors.bg }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={keyboardOffset}
+        >
+          <View style={[styles.backRow, { paddingTop: insets.top + 6 }]}>
             <Pressable
-              onPress={send}
-              disabled={sending || !text.trim()}
-              style={[
-                styles.sendBtn,
-                {
-                  backgroundColor: "rgba(73,8,176,0.18)",
-                  borderColor: border,
-                  opacity: sending || !text.trim() ? 0.5 : 1,
-                },
-              ]}
+              onPress={() => router.back()}
+              style={[styles.backBtn, { backgroundColor: glass, borderColor: border }]}
             >
-              <Ionicons name="send" size={16} color={colors.text} />
+              <Ionicons name="chevron-back" size={20} color={colors.text} />
             </Pressable>
           </View>
-        </View>
-      </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
+
+          <View style={styles.headerCenter}>
+            <Image source={{ uri: avatar }} style={styles.headerAvatar} />
+            <Text style={[styles.headerName, { color: colors.text, fontFamily: fonts.display }]} numberOfLines={1}>
+              {name}
+            </Text>
+            <Pressable
+              onPress={goViewProfile}
+              style={[styles.viewProfileBtn, { backgroundColor: "rgba(73,8,176,0.12)", borderColor: colors.border }]}
+            >
+              <Text style={[styles.viewProfileText, { color: colors.text, fontFamily: fonts.strong }]}>
+                view profile
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={{ flex: 1 }}>
+            {loading ? (
+              <View style={styles.center}>
+                <ActivityIndicator />
+                <Text style={[styles.muted, { color: colors.muted, fontFamily: fonts.body }]}>loading…</Text>
+              </View>
+            ) : (
+              <FlatList
+                ref={listRef}
+                data={msgs}
+                keyExtractor={(m) => String(m.id)}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={Platform.OS === "ios" ? "on-drag" : "none"}
+                contentContainerStyle={{
+                  paddingHorizontal: 14,
+                  paddingTop: 8,
+                  paddingBottom: 12,
+                }}
+                renderItem={({ item }) => {
+                  const mine = item.sender_id === user?.id;
+                  return (
+                    <View
+                      style={[
+                        styles.bubble,
+                        mine ? styles.bubbleMine : styles.bubbleTheirs,
+                        { borderColor: colors.border },
+                      ]}
+                    >
+                      <Text style={[styles.bubbleText, { color: mine ? "#fff" : colors.text, fontFamily: fonts.body }]}>
+                        {String(item.body ?? "").toLowerCase()}
+                      </Text>
+                    </View>
+                  );
+                }}
+                onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+              />
+            )}
+          </View>
+
+          <View style={[styles.composer, { borderTopColor: colors.border, paddingBottom: insets.bottom + 8 }]}>
+            <View style={[styles.inputWrap, { backgroundColor: glass, borderColor: border }]}>
+              <TextInput
+                value={text}
+                onChangeText={setText}
+                placeholder="message…"
+                placeholderTextColor={isDark ? "rgba(255,255,255,0.45)" : "rgba(17,17,24,0.45)"}
+                style={[styles.input, { color: colors.text, fontFamily: fonts.body }]}
+                multiline={false}
+                returnKeyType="send"
+                onSubmitEditing={send}
+                onFocus={() => setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80)}
+              />
+              <Pressable
+                onPress={send}
+                disabled={sending || !text.trim()}
+                style={[
+                  styles.sendBtn,
+                  {
+                    backgroundColor: "rgba(73,8,176,0.18)",
+                    borderColor: border,
+                    opacity: sending || !text.trim() ? 0.5 : 1,
+                  },
+                ]}
+              >
+                <Ionicons name="send" size={16} color={colors.text} />
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
+    </>
   );
 }
 
