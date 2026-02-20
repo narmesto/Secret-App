@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useMemo } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -32,12 +33,93 @@ export function EventImageCard({
 }) {
   const { colors, fonts } = useTheme();
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        smallCard: {
+          width: 180,
+          borderRadius: 16,
+          overflow: "hidden",
+          marginRight: 16,
+          backgroundColor: colors.card,
+        },
+        smallImage: {
+          width: "100%",
+          height: 120,
+          backgroundColor: colors.card,
+        },
+        largeCard: {
+    width: "100%",
+    height: 250, // Increased from 220
+    borderRadius: 24,
+    justifyContent: "flex-end",
+  },
+        largeCardOverlay: {
+          backgroundColor: "rgba(0,0,0,0.35)",
+          flex: 1,
+          borderRadius: 24,
+          padding: 20,
+          flexDirection: "row",
+          alignItems: "flex-end",
+        },
+        largeCardTitle: {
+          color: "#fff",
+          fontSize: 24,
+          textShadowColor: "rgba(0, 0, 0, 0.5)",
+          textShadowOffset: { width: 1, height: 1 },
+          textShadowRadius: 2,
+        },
+        largeCardSubtitle: {
+          color: "rgba(255,255,255,0.9)",
+          fontSize: 15,
+          marginTop: 4,
+          textShadowColor: "rgba(0, 0, 0, 0.5)",
+          textShadowOffset: { width: 1, height: 1 },
+          textShadowRadius: 2,
+        },
+        largeCardSaveBtn: {
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: "rgba(0,0,0,0.3)",
+          justifyContent: "center",
+          alignItems: "center",
+        },
+        friendSaveBadge: {
+          position: "absolute",
+          top: 16,
+          left: 16,
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "rgba(0,0,0,0.5)",
+          borderRadius: 12,
+          paddingVertical: 4,
+          paddingHorizontal: 8,
+          gap: 6,
+        },
+        friendSaveText: {
+          color: "#fff",
+          fontSize: 12,
+          fontFamily: "Inter_700Bold",
+        },
+        smallFriendSaveBadge: {
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+          marginTop: 6,
+        },
+        smallFriendSaveText: {
+          color: colors.muted,
+          fontSize: 11,
+          fontFamily: "Inter_600SemiBold",
+        },
+      }),
+    [colors]
+  );
+
   if (variant === "small") {
     return (
-      <Pressable
-        onPress={onPress}
-        style={[styles.smallCard, { backgroundColor: colors.card }]}
-      >
+      <Pressable onPress={onPress} style={styles.smallCard}>
         <Image
           source={{ uri: event.cover_image || initialsAvatar(event.title) }}
           style={styles.smallImage}
@@ -115,82 +197,3 @@ export function EventImageCard({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  smallCard: {
-    width: 150,
-    borderRadius: 16,
-    overflow: "hidden",
-    marginRight: 12,
-  },
-  smallImage: {
-    width: "100%",
-    height: 100,
-    backgroundColor: "#eee",
-  },
-  largeCard: {
-    width: "100%",
-    height: 220,
-    borderRadius: 24,
-    justifyContent: "flex-end",
-  },
-  largeCardOverlay: {
-    backgroundColor: "rgba(0,0,0,0.35)",
-    flex: 1,
-    borderRadius: 24,
-    padding: 20,
-    flexDirection: "row",
-    alignItems: "flex-end",
-  },
-  largeCardTitle: {
-    color: "#fff",
-    fontSize: 24,
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  largeCardSubtitle: {
-    color: "rgba(255,255,255,0.9)",
-    fontSize: 15,
-    marginTop: 4,
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  largeCardSaveBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  friendSaveBadge: {
-    position: "absolute",
-    top: 16,
-    left: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    gap: 6,
-  },
-  friendSaveText: {
-    color: "#fff",
-    fontSize: 12,
-    fontFamily: "Inter_700Bold",
-  },
-  smallFriendSaveBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 6,
-  },
-  smallFriendSaveText: {
-    color: "#999",
-    fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
-  },
-});

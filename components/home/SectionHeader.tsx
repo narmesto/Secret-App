@@ -10,7 +10,7 @@ export function SectionHeader({
 }) {
   const { colors, fonts } = useTheme();
   return (
-    <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 12 }}>
+    <View style={{ paddingTop: 24, paddingBottom: 12, paddingHorizontal: 20 }}>
       <Text style={{ fontSize: 22, fontFamily: fonts.display, color: colors.text }}>
         {title.toLowerCase()}
       </Text>

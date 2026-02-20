@@ -359,14 +359,18 @@ export default function EventDetail() {
 
   async function onShare() {
     if (!event) return;
-    const msg =
-      `${String(event.title ?? "").toLowerCase()}\n` +
-      `${formatWhen(event.start_time).toLowerCase()}\n` +
-      `${(event.location ?? "location tbd").toLowerCase()}\n\n` +
-      `shared from gather`;
+
+    // This is the URL that will be shared. It points to our Open Graph endpoint.
+    // We will need to replace this with your actual Supabase project URL.
+    const projectUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!.replace('.co', '.in');
+    const shareUrl = `${projectUrl}/functions/v1/event-og-tags?id=${id}`;
 
     try {
-      await Share.share({ message: msg });
+      await Share.share({ 
+        title: event.title,
+        message: shareUrl, // For most apps, the message is the URL itself
+        url: shareUrl // For apps that use the url field
+      });
     } catch (e) {
       console.log("[share error]", e);
     }

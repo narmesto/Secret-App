@@ -411,12 +411,12 @@ export default function HomeScreen() {
             headerTitle: "gather",
             headerLeft: () => (
                 <Pressable onPress={handleOpenFilterModal} style={{ marginLeft: 12 }}>
-                    <Ionicons name="options-outline" size={24} color={colors.primary} />
+                    <Ionicons name="options-outline" size={24} color={colors.text} />
                 </Pressable>
             ),
             headerRight: () => (
                 <Pressable onPress={init} style={{ marginRight: 12 }}>
-                    <Ionicons name="refresh" size={24} color={colors.primary} />
+                    <Ionicons name="refresh" size={24} color={colors.text} />
                 </Pressable>
             ),
         });
@@ -494,76 +494,71 @@ export default function HomeScreen() {
           </Text>
         ) : null}
 
-        {!loading && myEvents.length > 0 ? (
-          <>
-            <SectionHeader title="My Events" />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 12 }}
-            >
-              {myEvents.map((e) => (
-                <EventImageCard
-                  key={`my-event-${e.id}`}
-                  variant="small"
-                  event={e}
-                  saved={savedIds.has(e.id)}
-                  saving={saveBusy.has(e.id)}
-                  onPress={() => router.push(`/event/${e.id}`)}
-                  onToggleSave={() => toggleSave(e.id)}
-                  friendSaveCount={friendSaveCounts[e.id] || 0}
-                />
-              ))}
-            </ScrollView>
-          </>
-        ) : null}
+        <View style={{ gap: 32 }}>
+          {!loading && myEvents.length > 0 ? (
+            <View>
+              <SectionHeader title="My Events" />
+              <View style={{ gap: 20 }}>
+                {myEvents.map((e) => (
+                  <EventImageCard
+                    key={`my-event-${e.id}`}
+                    variant="large"
+                    event={e}
+                    saved={savedIds.has(e.id)}
+                    saving={saveBusy.has(e.id)}
+                    onPress={() => router.push(`/event/${e.id}`)}
+                    onToggleSave={() => toggleSave(e.id)}
+                    friendSaveCount={friendSaveCounts[e.id] || 0}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : null}
 
-        {!loading && startingSoon.length > 0 ? (
-          <>
-            <SectionHeader title="Starting Today" />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 12 }}
-            >
-              {startingSoon.map((e) => (
-                <EventImageCard
-                  key={`today-${e.id}`}
-                  variant="small"
-                  event={e}
-                  saved={savedIds.has(e.id)}
-                  saving={saveBusy.has(e.id)}
-                  onPress={() => router.push(`/event/${e.id}`)}
-                  onToggleSave={() => toggleSave(e.id)}
-                  friendSaveCount={friendSaveCounts[e.id] || 0}
-                />
-              ))}
-            </ScrollView>
-          </>
-        ) : null}
+          {!loading && startingSoon.length > 0 ? (
+            <View>
+              <SectionHeader title="Starting Today" />
+              <View style={{ gap: 20 }}>
+                {startingSoon.map((event) => (
+                  <EventImageCard
+                    key={event.id}
+                    event={event}
+                    variant="large"
+                    saved={savedIds.has(event.id)}
+                    saving={saveBusy.has(event.id)}
+                    onToggleSave={() => toggleSave(event.id)}
+                    friendSaveCount={friendSaveCounts[event.id] || 0}
+                    onPress={() => router.push(`/event/${event.id}`)}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : null}
 
-        <SectionHeader title="Spotlight" subtitle="All upcoming gatherings" />
-
-        {loading ? (
-          <LoadingBubble />
-        ) : spotlightEvents.length > 0 ? (
-          <View style={{ gap: 12 }}>
-            {spotlightEvents.map((e) => (
-              <EventImageCard
-                key={`spot-${e.id}`}
-                variant="large"
-                event={e}
-                saved={savedIds.has(e.id)}
-                saving={saveBusy.has(e.id)}
-                onPress={() => router.push(`/event/${e.id}`)}
-                onToggleSave={() => toggleSave(e.id)}
-                friendSaveCount={friendSaveCounts[e.id] || 0}
-              />
-            ))}
+          <View>
+            <SectionHeader title="Spotlight" subtitle="All upcoming gatherings" />
+            {loading ? (
+              <LoadingBubble />
+            ) : spotlightEvents.length > 0 ? (
+              <View style={{ gap: 20 }}>
+                {spotlightEvents.map((event) => (
+                  <EventImageCard
+                    key={event.id}
+                    event={event}
+                    variant="large"
+                    saved={savedIds.has(event.id)}
+                    saving={saveBusy.has(event.id)}
+                    onToggleSave={() => toggleSave(event.id)}
+                    friendSaveCount={friendSaveCounts[event.id] || 0}
+                    onPress={() => router.push(`/event/${event.id}`)}
+                  />
+                ))}
+              </View>
+            ) : (
+              <EmptyBubble text="No gatherings yet." />
+            )}
           </View>
-        ) : (
-          <EmptyBubble text="No gatherings yet." />
-        )}
+        </View>
       </ScrollView>
 
       <Modal visible={showFilterModal} transparent animationType="slide">
@@ -704,5 +699,10 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     paddingHorizontal: 24,
     gap: 12,
+  },
+  headerBtn: {
+    padding: 8,
+    borderRadius: 24,
+    borderWidth: 1,
   },
 });

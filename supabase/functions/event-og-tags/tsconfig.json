@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext"
+  },
+  "include": ["index.ts", "supabase.d.ts"]
+}
