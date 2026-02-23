@@ -198,10 +198,17 @@ export function EventImageCard({
             </Text>
           </View>
         )}
-        <Image
+        <ImageBackground
           source={{ uri: event.cover_image || initialsAvatar(event.title) }}
           style={styles.largeImage}
-        />
+        >
+          {friendSaveCount > 0 && (
+            <View style={styles.friendSaveBadge}>
+              <Ionicons name="people" size={12} color="#fff" />
+              <Text style={styles.friendSaveText}>{friendSaveCount}</Text>
+            </View>
+          )}
+        </ImageBackground>
         <View style={styles.largeCardInfoBar}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.largeCardTitle, { fontFamily: fonts.display }]}>

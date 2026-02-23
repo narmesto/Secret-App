@@ -98,6 +98,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <Ionicons name="add" size={30} color="#fff" />
           ),
+          tabBarLabelStyle: { color: "#fff", fontSize: 11 },
         }}
       />
 
