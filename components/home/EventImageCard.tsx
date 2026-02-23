@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -10,9 +10,10 @@ import {
   Image,
 } from "react-native";
 import { useTheme } from "../../context/theme";
-import { EventRow } from "../../types";
+import { EventRow, Profile } from "../../types";
 import { formatWhen } from "../../utils/time";
 import { initialsAvatar } from "../../utils/string";
+import { supabase } from "../../supabase";
 
 export function EventImageCard({
     variant = "large",
@@ -32,12 +33,33 @@ export function EventImageCard({
     onToggleSave: () => void;
 }) {
   const { colors, fonts } = useTheme();
+  const [owner, setOwner] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    if (!event.owner_id) return;
+
+    const fetchOwner = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", event.owner_id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching event owner:", error);
+      } else {
+        setOwner(data);
+      }
+    };
+
+    fetchOwner();
+  }, [event.owner_id]);
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
         smallCard: {
-          width: 180,
+          width: 240,
           borderRadius: 16,
           overflow: "hidden",
           marginRight: 16,
@@ -45,45 +67,50 @@ export function EventImageCard({
         },
         smallImage: {
           width: "100%",
-          height: 120,
+          height: 100,
           backgroundColor: colors.card,
         },
         largeCard: {
-    width: "100%",
-    height: 250, // Increased from 220
-    borderRadius: 24,
-    justifyContent: "flex-end",
-  },
-        largeCardOverlay: {
-          backgroundColor: "rgba(0,0,0,0.35)",
-          flex: 1,
-          borderRadius: 24,
-          padding: 20,
+          width: "100%",
+          backgroundColor: colors.bg,
+        },
+        largeImage: {
+          width: "100%",
+          height: 220,
+          backgroundColor: colors.bg,
+        },
+        largeCardInfoBar: {
           flexDirection: "row",
-          alignItems: "flex-end",
+          alignItems: "center",
+          padding: 16,
         },
         largeCardTitle: {
-          color: "#fff",
-          fontSize: 24,
-          textShadowColor: "rgba(0, 0, 0, 0.5)",
-          textShadowOffset: { width: 1, height: 1 },
-          textShadowRadius: 2,
+          fontSize: 20,
+          color: colors.text,
         },
         largeCardSubtitle: {
-          color: "rgba(255,255,255,0.9)",
-          fontSize: 15,
+          fontSize: 14,
+          color: colors.muted,
           marginTop: 4,
-          textShadowColor: "rgba(0, 0, 0, 0.5)",
-          textShadowOffset: { width: 1, height: 1 },
-          textShadowRadius: 2,
         },
         largeCardSaveBtn: {
-          width: 48,
-          height: 48,
-          borderRadius: 24,
-          backgroundColor: "rgba(0,0,0,0.3)",
-          justifyContent: "center",
+          padding: 8,
+        },
+        ownerInfoBar: {
+          flexDirection: "row",
           alignItems: "center",
+          padding: 12,
+        },
+        ownerAvatar: {
+          width: 30,
+          height: 30,
+          borderRadius: 15,
+          backgroundColor: colors.bg,
+          marginRight: 10,
+        },
+        ownerName: {
+          fontSize: 14,
+          color: colors.text,
         },
         friendSaveBadge: {
           position: "absolute",
@@ -158,42 +185,45 @@ export function EventImageCard({
   }
 
   return (
-    <Pressable onPress={onPress} style={{ paddingHorizontal: 24 }}>
-      <ImageBackground
-        source={{ uri: event.cover_image || initialsAvatar(event.title) }}
-        style={styles.largeCard}
-        imageStyle={{ borderRadius: 24 }}
-      >
-        <View style={styles.largeCardOverlay}>
-          {friendSaveCount > 0 && (
-            <View style={styles.friendSaveBadge}>
-              <Ionicons name="people" size={12} color="#fff" />
-              <Text style={styles.friendSaveText}>{friendSaveCount}</Text>
-            </View>
-          )}
-
+    <Pressable onPress={onPress}>
+      <View style={styles.largeCard}>
+        {owner && (
+          <View style={styles.ownerInfoBar}>
+            <Image
+              source={{ uri: owner.avatar_url || initialsAvatar(owner.display_name || '') }}
+              style={styles.ownerAvatar}
+            />
+            <Text style={[styles.ownerName, { fontFamily: fonts.body }]}>
+              {(owner.display_name || '').toLowerCase()}
+            </Text>
+          </View>
+        )}
+        <Image
+          source={{ uri: event.cover_image || initialsAvatar(event.title) }}
+          style={styles.largeImage}
+        />
+        <View style={styles.largeCardInfoBar}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.largeCardTitle, { fontFamily: fonts.display }]}>
               {event.title.toLowerCase()}
             </Text>
             <Text style={[styles.largeCardSubtitle, { fontFamily: fonts.body }]}>
-              {formatWhen(event.start_time).toLowerCase()}
+              {formatWhen(event.start_time).toLowerCase()} • {event.location || "location tbd"}
             </Text>
           </View>
-
           <Pressable onPress={onToggleSave} style={styles.largeCardSaveBtn}>
             {saving ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.text} />
             ) : (
               <Ionicons
                 name={saved ? "bookmark" : "bookmark-outline"}
                 size={22}
-                color="#fff"
+                color={colors.text}
               />
             )}
           </Pressable>
         </View>
-      </ImageBackground>
+      </View>
     </Pressable>
   );
 }

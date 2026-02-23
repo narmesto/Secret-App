@@ -317,10 +317,7 @@ export default function HomeScreen() {
   const now = Date.now();
   const today = useMemo(() => new Date(), []);
 
-  const myEvents = useMemo(() => {
-    if (!user?.id) return [];
-    return filteredEvents.filter((e) => e.owner_id === user.id).slice(0, 25);
-  }, [filteredEvents, user?.id]);
+
 
   const spotlightEvents = useMemo(() => {
     return filteredEvents.filter((e) => new Date(e.start_time).getTime() >= now).slice(0, 25);
@@ -495,30 +492,12 @@ export default function HomeScreen() {
         ) : null}
 
         <View style={{ gap: 32 }}>
-          {!loading && myEvents.length > 0 ? (
-            <View>
-              <SectionHeader title="My Events" />
-              <View style={{ gap: 20 }}>
-                {myEvents.map((e) => (
-                  <EventImageCard
-                    key={`my-event-${e.id}`}
-                    variant="large"
-                    event={e}
-                    saved={savedIds.has(e.id)}
-                    saving={saveBusy.has(e.id)}
-                    onPress={() => router.push(`/event/${e.id}`)}
-                    onToggleSave={() => toggleSave(e.id)}
-                    friendSaveCount={friendSaveCounts[e.id] || 0}
-                  />
-                ))}
-              </View>
-            </View>
-          ) : null}
+
 
           {!loading && startingSoon.length > 0 ? (
             <View>
               <SectionHeader title="Starting Today" />
-              <View style={{ gap: 20 }}>
+              <View>
                 {startingSoon.map((event) => (
                   <EventImageCard
                     key={event.id}
@@ -540,7 +519,7 @@ export default function HomeScreen() {
             {loading ? (
               <LoadingBubble />
             ) : spotlightEvents.length > 0 ? (
-              <View style={{ gap: 20 }}>
+              <View>
                 {spotlightEvents.map((event) => (
                   <EventImageCard
                     key={event.id}

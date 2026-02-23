@@ -16,6 +16,7 @@ import {
 import MapView, { Marker, Region } from "react-native-maps";
 import { useTheme } from "../../context/theme";
 import { supabase } from "../../supabase";
+import { useRouter } from "expo-router";
 
 type Category = { id: string; name: string };
 
@@ -69,6 +70,7 @@ function dedupeByKey<T>(rows: T[], keyFn: (row: T) => string): T[] {
 }
 
 export default function MapScreen() {
+  const router = useRouter();
   const { colors, resolvedScheme, fonts } = useTheme();
   const isDark = resolvedScheme === "dark";
 
@@ -402,8 +404,7 @@ export default function MapScreen() {
             key={`event-${p.id}`}
             coordinate={{ latitude: p.lat, longitude: p.lng }}
             onPress={() => {
-              setSearchOpen(false);
-              Keyboard.dismiss();
+              router.push(`/event/${p.id}`);
             }}
           >
             <EventBubbleMarker

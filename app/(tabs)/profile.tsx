@@ -14,8 +14,11 @@ import {
     Text,
     View,
 } from "react-native";
+import { EventImageCard } from "../../components/home/EventImageCard";
+import { SectionHeader } from "../../components/home/SectionHeader";
 import { useAuth } from "../../context/auth";
 import { useTheme } from "../../context/theme";
+import { EventRow } from "../../types";
 import { supabase } from "../../supabase";
 
 type ProfileRow = {
@@ -99,6 +102,7 @@ export default function ProfileScreen() {
   const [friendsCount, setFriendsCount] = useState(0); // ✅ NEW
   const [saved, setSaved] = useState<MiniEvent[]>([]);
   const [rsvps, setRsvps] = useState<MiniEvent[]>([]);
+  const [myEvents, setMyEvents] = useState<EventRow[]>([]);
 
   const displayName = useMemo(() => {
     const u = profile?.display_name?.trim();
@@ -195,6 +199,7 @@ export default function ProfileScreen() {
       setFriendsCount(0);
       setSaved([]);
       setRsvps([]);
+      setMyEvents([]);
       setLoading(false);
       return;
     }
@@ -263,13 +268,47 @@ export default function ProfileScreen() {
         return ids.map((id) => byId.get(String(id))).filter(Boolean) as MiniEvent[];
       }
 
-      const [savedEvents, rsvpEvents] = await Promise.all([
+      async function fetchMyEvents(ownerId: string): Promise<EventRow[]> {
+        const { data, error } = await supabase
+          .from("events")
+          .select(`
+            id,
+            title,
+            description,
+            location,
+            start_time,
+            cover_image,
+            lat,
+            lng,
+            owner_id,
+            ministry_id,
+            event_categories ( categories ( id, name ) ),
+            ministries (id, name)
+          `)
+          .eq("owner_id", ownerId)
+          .order("start_time", { ascending: false });
+
+        if (error) {
+          console.log("[profile my events fetch error]", error.message);
+          return [];
+        }
+        const transformed = (data ?? []).map((d) => ({
+          ...d,
+          categories: d.event_categories.map((ec: any) => ec.categories.name),
+          ministries: d.ministries?.[0] ?? null,
+        }));
+        return transformed as unknown as EventRow[];
+      }
+
+      const [savedEvents, rsvpEvents, myEventsData] = await Promise.all([
         fetchEventsByIds(savedIds),
         fetchEventsByIds(rsvpIds),
+        fetchMyEvents(user.id),
       ]);
 
       setSaved(savedEvents);
       setRsvps(rsvpEvents);
+      setMyEvents(myEventsData);
 
       if (!savedTable) console.log("[profile] could not find a working saved table name");
       if (!rsvpTable) console.log("[profile] could not find a working rsvp table name");
@@ -283,12 +322,12 @@ export default function ProfileScreen() {
     useEffect(() => {
         navigation.setOptions({
             headerRight: () => (
-                <Pressable onPress={loadEverything} style={{ marginRight: 12 }}>
-                    <Ionicons name="refresh" size={24} color={colors.primary} />
+                <Pressable onPress={() => router.push('/notifications')} style={{ marginRight: 12 }}>
+                    <Ionicons name="notifications-outline" size={24} color={colors.text} />
                 </Pressable>
             ),
         });
-    }, [navigation, colors, loadEverything]);
+    }, [navigation, colors]);
 
     useFocusEffect(
         useCallback(() => {
@@ -385,6 +424,32 @@ export default function ProfileScreen() {
           <MiniStatPressable label="saved" value={String(saved.length)} onPress={openSaved} colors={colors} fonts={fonts} />
           <MiniStatPressable label="rsvpd" value={String(rsvps.length)} onPress={openRsvps} colors={colors} fonts={fonts} />
         </View>
+
+        {myEvents.length > 0 ? (
+          <View>
+            <SectionHeader title="My Events" />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{ marginTop: 12, marginHorizontal: -16 }}
+              contentContainerStyle={{ paddingHorizontal: 16 }}
+            >
+              {myEvents.map((e) => (
+                <EventImageCard
+                  key={`my-event-${e.id}`}
+                  variant="small"
+                  event={e}
+                  onPress={() => router.push(`/event/${e.id}`)}
+                  // These props are not needed here, but the component expects them
+                  saved={false}
+                  saving={false}
+                  onToggleSave={() => {}}
+                  friendSaveCount={0}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
 
         <Pressable
           onPress={openMinistries}

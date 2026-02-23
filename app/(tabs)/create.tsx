@@ -165,7 +165,7 @@ export default function CreateScreen() {
   const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
 
-  const [useDeviceCoords, setUseDeviceCoords] = useState(true);
+  const [locationPrivacy, setLocationPrivacy] = useState<"public" | "private" | "none">("public");
 
   const addrTimer = useRef<any>(null);
 
@@ -260,8 +260,6 @@ export default function CreateScreen() {
   }
 
   async function getDeviceCoordsIfAllowed(): Promise<{ lat: number; lng: number } | null> {
-    if (!useDeviceCoords) return null;
-
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") return null;
 
@@ -326,8 +324,20 @@ export default function CreateScreen() {
       }
 
       let coords: { lat: number; lng: number } | null = null;
-      if (pickedCoords) coords = pickedCoords;
-      else coords = await getDeviceCoordsIfAllowed();
+      let location: string | null = null;
+
+      if (locationPrivacy !== "none") {
+        if (pickedCoords) {
+          coords = pickedCoords;
+          location = locationText.trim() || null;
+        } else {
+          // This case is tricky. The user hasn't picked an address from the dropdown.
+          // We could try to geocode locationText, but that's another API call.
+          // The old logic used device coords as a fallback, but that's gone.
+          // For now, if they don't pick an address, we'll just save the text and no coords.
+          location = locationText.trim() || null;
+        }
+      }
 
       let coverUrl: string | null = coverPublicUrl;
       if (coverLocalUri && !coverUrl) {
@@ -338,16 +348,14 @@ export default function CreateScreen() {
       const payload: any = {
         title: title.trim(),
         description: description.trim() || null,
-        location: locationText.trim() || null,
+        location: location,
         start_time: formatForStorage(startDate),
         cover_image: coverUrl || null,
         owner_id: uid,
+        location_privacy: locationPrivacy,
+        lat: coords?.lat ?? null,
+        lng: coords?.lng ?? null,
       };
-
-      if (coords) {
-        payload.lat = coords.lat;
-        payload.lng = coords.lng;
-      }
 
       const { data: created, error: createErr } = await supabase
         .from("events")
@@ -378,7 +386,8 @@ export default function CreateScreen() {
         }
       }
 
-      router.replace(`/event/${eventId}` as any);
+      router.back();
+      router.push(`/event/${eventId}` as any);
     } catch (e: any) {
       console.log("[create submit exception]", e);
       Alert.alert("error", e?.message ?? "something went wrong.");
@@ -499,61 +508,105 @@ export default function CreateScreen() {
             ) : null}
           </Field>
 
-          <Field label="address" colors={colors} fonts={fonts}>
-            <View style={styles.addressContainer}>
-              <TextInput
-                value={locationText}
-                onChangeText={runAddressSearch}
-                placeholder="start typing an address"
-                placeholderTextColor={isDark ? "rgba(255,255,255,0.55)" : "rgba(17,17,24,0.45)"}
-                style={[
-                  styles.input,
-                  { backgroundColor: glass, borderColor: border, color: colors.text, fontFamily: fonts.body },
-                ]}
-              />
-
-              {addrLoading ? (
-                <View style={styles.addrLoadingRow}>
-                  <ActivityIndicator />
-                </View>
-              ) : null}
-
-              {addrResults.length > 0 ? (
-                <View
-                  style={[
-                    styles.addressDropdown,
-                    { backgroundColor: isDark ? "rgba(20,20,26,0.98)" : "#f4f4f6", borderColor: border },
-                  ]}
-                >
-                  {addrResults.map((item, idx) => (
-                    <Pressable
-                      key={`addr-${item.place_id ?? idx}`}
+          <Field label="location privacy" colors={colors} fonts={fonts}>
+            <View style={styles.chipsRow}>
+              {(["public", "private", "none"] as const).map((p) => {
+                const active = locationPrivacy === p;
+                return (
+                  <Pressable
+                    key={p}
+                    onPress={() => setLocationPrivacy(p)}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor: active ? "rgba(73,8,176,0.86)" : glass,
+                        borderColor: active ? "rgba(73,8,176,0.20)" : border,
+                      },
+                    ]}
+                  >
+                    <Text
                       style={[
-                        styles.addressRow,
-                        { borderBottomColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(17,17,24,0.08)" },
-                        idx === addrResults.length - 1 ? { borderBottomWidth: 0 } : null,
+                        styles.chipText,
+                        {
+                          color: active ? "#fff" : colors.text,
+                          fontFamily: active ? fonts.strong : fonts.body,
+                        },
                       ]}
-                      onPress={() => pickAddress(item)}
                     >
-                      <Text style={{ color: colors.text, fontWeight: "700", fontSize: 13, fontFamily: fonts.body }}>
-                        {formatUSAddress(item.address)}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
+                      {p}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
-
-            {pickedCoords ? (
-              <Text style={[styles.hint, { color: colors.muted, fontFamily: fonts.body }]}>
-                pin will be placed from selected address.
-              </Text>
-            ) : (
-              <Text style={[styles.hint, { color: colors.muted, fontFamily: fonts.body }]}>
-                tip: pick a suggestion to auto-pin it on the map.
-              </Text>
-            )}
+            <Text style={[styles.hint, { color: colors.muted, fontFamily: fonts.body, marginTop: 8 }]}>
+              {
+                {
+                  public: "location is visible to everyone.",
+                  private: "location is hidden, but can be requested.",
+                  none: "this event has no physical location.",
+                }[locationPrivacy]
+              }
+            </Text>
           </Field>
+
+          {locationPrivacy !== "none" ? (
+            <Field label="address" colors={colors} fonts={fonts}>
+              <View style={styles.addressContainer}>
+                <TextInput
+                  value={locationText}
+                  onChangeText={runAddressSearch}
+                  placeholder="start typing an address"
+                  placeholderTextColor={isDark ? "rgba(255,255,255,0.55)" : "rgba(17,17,24,0.45)"}
+                  style={[
+                    styles.input,
+                    { backgroundColor: glass, borderColor: border, color: colors.text, fontFamily: fonts.body },
+                  ]}
+                />
+
+                {addrLoading ? (
+                  <View style={styles.addrLoadingRow}>
+                    <ActivityIndicator />
+                  </View>
+                ) : null}
+
+                {addrResults.length > 0 ? (
+                  <View
+                    style={[
+                      styles.addressDropdown,
+                      { backgroundColor: isDark ? "rgba(20,20,26,0.98)" : "#f4f4f6", borderColor: border },
+                    ]}
+                  >
+                    {addrResults.map((item, idx) => (
+                      <Pressable
+                        key={`addr-${item.place_id ?? idx}`}
+                        style={[
+                          styles.addressRow,
+                          { borderBottomColor: isDark ? "rgba(255,255,255,0.10)" : "rgba(17,17,24,0.08)" },
+                          idx === addrResults.length - 1 ? { borderBottomWidth: 0 } : null,
+                        ]}
+                        onPress={() => pickAddress(item)}
+                      >
+                        <Text style={{ color: colors.text, fontWeight: "700", fontSize: 13, fontFamily: fonts.body }}>
+                          {formatUSAddress(item.address)}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+
+              {pickedCoords ? (
+                <Text style={[styles.hint, { color: colors.muted, fontFamily: fonts.body }]}>
+                  pin will be placed from selected address.
+                </Text>
+              ) : (
+                <Text style={[styles.hint, { color: colors.muted, fontFamily: fonts.body }]}>
+                  tip: pick a suggestion to auto-pin it on the map.
+                </Text>
+              )}
+            </Field>
+          ) : null}
 
           <Field label="cover image" colors={colors} fonts={fonts}>
             <View style={{ flexDirection: "row", gap: 10 }}>
@@ -605,29 +658,7 @@ export default function CreateScreen() {
             </View>
           </Field>
 
-          <View style={[styles.card, { backgroundColor: glass, borderColor: border }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardTitle, { color: colors.text, fontFamily: fonts.strong }]}>use device coords</Text>
-              <Text style={[styles.cardSub, { color: colors.muted, fontFamily: fonts.body }]}>
-                if you don’t select an address, we’ll try to pin using your current location.
-              </Text>
-            </View>
 
-            <Pressable
-              onPress={() => setUseDeviceCoords((v) => !v)}
-              style={[
-                styles.togglePill,
-                {
-                  backgroundColor: useDeviceCoords ? "rgba(73,8,176,0.18)" : "rgba(255,255,255,0.10)",
-                  borderColor: border,
-                },
-              ]}
-            >
-              <Text style={{ color: colors.text, fontWeight: "800", fontFamily: fonts.strong }}>
-                {useDeviceCoords ? "on" : "off"}
-              </Text>
-            </Pressable>
-          </View>
 
           <View style={{ height: 26 }} />
         </ScrollView>
@@ -761,11 +792,12 @@ const styles = StyleSheet.create({
   chip: {
     height: 34,
     paddingHorizontal: 14,
-    borderRadius: 999,
-    borderWidth: 1,
+    borderRadius: 99,
+    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
   },
+  chipText: { fontSize: 13, fontWeight: "700" },
 
   card: {
     marginTop: 16,

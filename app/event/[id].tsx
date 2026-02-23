@@ -31,6 +31,7 @@ type EventDetailRow = {
   cover_image: string | null;
   lat?: number | null;
   lng?: number | null;
+  location_privacy: "public" | "private" | "none";
   ministry_id?: string | null; // ✅ added
   event_categories?: { categories: Category | Category[] | null }[] | null;
 };
@@ -123,6 +124,9 @@ export default function EventDetail() {
   const [busySave, setBusySave] = useState(false);
   const [busyRsvp, setBusyRsvp] = useState(false);
   const [friendSaveCount, setFriendSaveCount] = useState(0);
+  const [locationRequestStatus, setLocationRequestStatus] = useState<
+    "none" | "pending" | "approved" | "denied"
+  >("none");
 
   useEffect(() => {
     if (!id) return;
@@ -142,7 +146,13 @@ export default function EventDetail() {
 
   async function init() {
     setLoading(true);
-    await Promise.all([fetchEvent(), fetchMoments(), fetchUserLocation(), fetchFriendSaveCount()]);
+    await Promise.all([
+      fetchEvent(),
+      fetchMoments(),
+      fetchUserLocation(),
+      fetchFriendSaveCount(),
+      fetchLocationRequestStatus(),
+    ]);
     await Promise.all([fetchSavedState(), fetchRsvpState()]);
     setLoading(false);
   }
@@ -174,6 +184,7 @@ export default function EventDetail() {
         cover_image,
         lat,
         lng,
+        location_privacy,
         ministry_id,
         event_categories (
           categories ( id, name )
@@ -285,6 +296,25 @@ export default function EventDetail() {
     setFriendSaveCount(savesData?.length || 0);
   }
 
+  async function fetchLocationRequestStatus() {
+    if (!user || !id) return;
+
+    const { data, error } = await supabase
+      .from("location_requests")
+      .select("status")
+      .eq("event_id", id)
+      .eq("requester_id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[fetchLocationRequestStatus] error:", error.message);
+      setLocationRequestStatus("none");
+      return;
+    }
+
+    setLocationRequestStatus(data?.status ?? "none");
+  }
+
   async function toggleSave() {
     if (!user?.id) {
       Alert.alert("sign in required", "please sign in to save events.");
@@ -357,6 +387,30 @@ export default function EventDetail() {
     }
   }
 
+  async function handleRequestLocation() {
+    if (!user?.id || !id) {
+      Alert.alert("Sign in required", "Please sign in to request location access.");
+      router.push("/login" as any);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("location_requests").insert({
+        event_id: id,
+        requester_id: user.id,
+        status: "pending",
+      });
+
+      if (error) throw new Error(error.message);
+
+      setLocationRequestStatus("pending");
+      Alert.alert("Request Sent", "The event host has been notified of your request.");
+    } catch (e: any) {
+      console.error("[handleRequestLocation] error:", e.message);
+      Alert.alert("Error", "Could not send your request. Please try again.");
+    }
+  }
+
   async function onShare() {
     if (!event) return;
 
@@ -422,7 +476,7 @@ export default function EventDetail() {
       <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
         <Pressable
           onPress={() => router.back()}
-          style={[styles.topBtn, { backgroundColor: glass, borderColor: border }]}
+          style={styles.topBtn}
         >
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
@@ -431,7 +485,7 @@ export default function EventDetail() {
 
         <Pressable
           onPress={onShare}
-          style={[styles.topBtn, { backgroundColor: glass, borderColor: border }]}
+          style={styles.topBtn}
         >
           <Ionicons name="share-outline" size={18} color={colors.text} />
         </Pressable>
@@ -467,6 +521,8 @@ export default function EventDetail() {
 
               {/* cover text */}
               <View style={styles.coverText}>
+                <View style={{ flex: 1 }} />
+
                 <Text style={[styles.title, { fontFamily: fonts.display }]} numberOfLines={2}>
                   {String(event.title ?? "").toLowerCase()}
                 </Text>
@@ -475,11 +531,43 @@ export default function EventDetail() {
                   {formatWhen(event.start_time).toLowerCase()}
                 </Text>
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Text style={[styles.meta2, { fontFamily: fonts.body }]} numberOfLines={1}>
-                    {(event.location ?? "location tbd").toLowerCase()}
-                    {typeof milesAway === "number" ? ` • ${milesAway.toFixed(1)} mi` : ""}
-                  </Text>
+
+
+
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+                  <View style={styles.locationBubble}>
+                    {event.location_privacy === "public" || locationRequestStatus === "approved" ? (
+                      <Text style={[styles.locationBubbleText, { fontFamily: fonts.body }]} numberOfLines={1}>
+                        {(event.location ?? "location tbd").toLowerCase()}
+                        {typeof milesAway === "number" ? ` • ${milesAway.toFixed(1)} mi` : ""}
+                      </Text>
+                    ) : event.location_privacy === "private" ? (
+                      <View>
+                        {locationRequestStatus === "none" && (
+                          <Pressable onPress={handleRequestLocation}>
+                            <Text style={[styles.locationBubbleText, { fontFamily: fonts.body }]}>
+                              Request Access
+                            </Text>
+                          </Pressable>
+                        )}
+                        {locationRequestStatus === "pending" && (
+                          <Text style={[styles.locationBubbleText, { fontFamily: fonts.body }]}>
+                            Request Pending
+                          </Text>
+                        )}
+                        {locationRequestStatus === "denied" && (
+                          <Text style={[styles.locationBubbleText, { fontFamily: fonts.body }]}>
+                            Request Denied
+                          </Text>
+                        )}
+                      </View>
+                    ) : (
+                      <Text style={[styles.locationBubbleText, { fontFamily: fonts.body }]} numberOfLines={1}>
+                        no physical location
+                      </Text>
+                    )}
+                  </View>
                   {friendSaveCount > 0 && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 4 }}>
                       <Text style={[styles.meta2, { fontFamily: fonts.body }]}>•</Text>
@@ -493,7 +581,7 @@ export default function EventDetail() {
 
                 {/* tags */}
                 {categoryNames.length > 0 ? (
-                  <View style={styles.tagsRow}>
+                  <View style={[styles.tagsRow, { marginTop: -12 }]}>
                     {categoryNames.slice(0, 6).map((t) => (
                       <View
                         key={`${event.id}-${t}`}
@@ -511,6 +599,12 @@ export default function EventDetail() {
                 ) : null}
               </View>
             </View>
+
+
+
+
+
+
 
             {/* actions row */}
             <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
@@ -626,7 +720,7 @@ const styles = StyleSheet.create({
   coverImage: { width: "100%", height: "100%" },
   coverFallback: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
   coverOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.40)" },
-  coverText: { ...StyleSheet.absoluteFillObject, padding: 16, justifyContent: "flex-end" },
+    coverText: { ...StyleSheet.absoluteFillObject, padding: 16, justifyContent: "flex-end" },
 
   title: { color: "#fff", fontSize: 22, fontWeight: "900", textTransform: "lowercase" },
   meta: { color: "rgba(255,255,255,0.86)", marginTop: 8, fontSize: 12, fontWeight: "700", textTransform: "lowercase" },
@@ -648,4 +742,19 @@ const styles = StyleSheet.create({
   section: { marginTop: 18, fontSize: 16, fontWeight: "900", textTransform: "lowercase" },
 
   moment: { width: "92%", alignSelf: "center", height: 240, borderRadius: 18, marginTop: 12 },
+
+  locationBubble: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 99,
+    alignSelf: "flex-start",
+    marginTop: 24,
+  },
+  locationBubbleText: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 14,
+    fontWeight: "700",
+    textTransform: "lowercase",
+  },
 });
