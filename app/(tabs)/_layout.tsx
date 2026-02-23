@@ -96,7 +96,7 @@ export default function TabLayout() {
           title: "create",
           tabBarButton: (p) => <CreateTabButton {...p} />,
           tabBarIcon: ({ color }) => (
-            <Ionicons name="add" size={30} color={color} />
+            <Ionicons name="add" size={30} color="#fff" />
           ),
         }}
       />
@@ -167,9 +167,9 @@ const styles = StyleSheet.create({
     borderRadius: 32,
 
     // subtle ring / depth
-    backgroundColor: "rgb(195, 170, 230)",
+    backgroundColor: "#a5a5a5ff",
     borderWidth: 1,
-    borderColor: "rgb(195, 170, 230)",
+    borderColor: "#b5b5b5ff",
 
     alignItems: "center",
     justifyContent: "center",
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     }),
   },
   createBtnFocused: {
-    backgroundColor: "rgba(73,8,176,0.22)",
-    borderColor: "rgba(73,8,176,0.32)",
+    backgroundColor: "#333",
+    borderColor: "#333",
   },
 });

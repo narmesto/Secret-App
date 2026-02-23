@@ -117,8 +117,8 @@ export default function ProfileScreen() {
   }, [profile?.avatar_url, displayName]);
 
   const switchTrack = isDark
-    ? { false: "rgba(255,255,255,0.22)", true: "rgba(73,8,176,0.55)" }
-    : { false: "rgba(17,17,24,0.30)", true: "rgba(73,8,176,0.42)" };
+    ? { false: "rgba(255,255,255,0.22)", true: "rgba(255,255,255,0.55)" }
+    : { false: "rgba(0,0,0,0.1)", true: "rgba(0,0,0,0.42)" };
 
   const switchThumb = isDark ? "#fff" : "rgba(17,17,24,0.92)";
 
@@ -380,7 +380,7 @@ export default function ProfileScreen() {
 
           <Pressable
             onPress={() => router.replace("/login" as any)}
-            style={[styles.primaryBtn, { backgroundColor: "rgba(73,8,176,0.14)", borderColor: softBorder }]}
+            style={[styles.primaryBtn, { backgroundColor: colors.card, borderColor: softBorder }]}
           >
             <Text style={[styles.primaryBtnText, { color: colors.text, fontFamily: fonts.strong }]}>
               go to login

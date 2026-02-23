@@ -40,7 +40,6 @@ type ThemeValue = {
 
 const ThemeContext = createContext<ThemeValue | null>(null);
 
-// Keep your brand purple
 const PRIMARY = "#000";
 
 // Clean / minimal surfaces (matches your desired vibe)

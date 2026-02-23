@@ -371,14 +371,10 @@ export default function MapScreen() {
   const text = isDark ? "#fff" : colors.text;
   const placeholder = isDark ? "rgba(255,255,255,0.58)" : "rgba(20,20,26,0.45)";
 
-  const purpleBorder = "rgba(73,8,176,0.18)";
+  const activeChipFill = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)";
+  const activeChipBorder = isDark ? "rgba(255,255,255,0.26)" : "rgba(0,0,0,0.16)";
 
-  // Active chip should feel like a *light* lavender wash, not a heavy purple pill.
-  const activeChipFill = isDark ? "rgba(73,8,176,0.12)" : "rgba(73,8,176,0.08)";
-  const activeChipBorder = isDark ? "rgba(73,8,176,0.26)" : "rgba(73,8,176,0.16)";
-
-  // Optional: slightly purple text when active, but subtle.
-  const activeChipText = isDark ? "#fff" : "rgba(73,8,176,0.85)";
+  const activeChipText = isDark ? "#000" : "#fff";
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -410,7 +406,7 @@ export default function MapScreen() {
             <EventBubbleMarker
               title={p.title}
               imageUrl={p.cover_image}
-              ringColor="rgba(73,8,176,0.62)"
+              ringColor="rgba(0,0,0,0.62)"
               bubbleBg={isDark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.60)"}
               bubbleBorder={isDark ? "rgba(255,255,255,0.18)" : "rgba(20,20,26,0.10)"}
             />
@@ -420,7 +416,7 @@ export default function MapScreen() {
 
       {/* top overlays */}
       <View style={styles.topWrap}>
-        <View style={[styles.searchBar, { backgroundColor: surfaceStrong, borderColor: purpleBorder }]}>
+        <View style={[styles.searchBar, { backgroundColor: surfaceStrong, borderColor: border }]}>
           <Ionicons name="search" size={18} color={placeholder} />
           <TextInput
             value={query}
@@ -450,7 +446,7 @@ export default function MapScreen() {
             <Compass
               heading={deviceHeading}
               textColor={text}
-              accent="rgba(73,8,176,0.78)"
+              accent={colors.text}
               fonts={fonts}
               borderColor={border}
               dialBg={surface}

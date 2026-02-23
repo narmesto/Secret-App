@@ -411,13 +411,13 @@ export default function CreateScreen() {
             style={[
               styles.postBtn,
               {
-                backgroundColor: "rgba(73,8,176,0.86)",
-                borderColor: "rgba(73,8,176,0.20)",
+                backgroundColor: colors.text,
+                borderColor: colors.text,
                 opacity: saving ? 0.6 : 1,
               },
             ]}
           >
-            {saving ? <ActivityIndicator /> : <Text style={[styles.postBtnText, { fontFamily: fonts.strong }]}>post</Text>}
+            {saving ? <ActivityIndicator /> : <Text style={[styles.postBtnText, { fontFamily: fonts.strong, color: colors.bg }]}>post</Text>}
           </Pressable>
         </View>
 
@@ -499,9 +499,9 @@ export default function CreateScreen() {
                 {Platform.OS === "ios" ? (
                   <Pressable
                     onPress={() => setShowDatePicker(false)}
-                    style={[styles.doneBtn, { backgroundColor: "rgba(73,8,176,0.14)", borderColor: border }]}
+                    style={[styles.doneBtn, { backgroundColor: colors.text, borderColor: border }]}
                   >
-                    <Text style={{ color: colors.text, fontWeight: "800", fontFamily: fonts.strong }}>done</Text>
+                    <Text style={{ color: colors.bg, fontWeight: "800", fontFamily: fonts.strong }}>done</Text>
                   </Pressable>
                 ) : null}
               </View>
@@ -519,8 +519,8 @@ export default function CreateScreen() {
                     style={[
                       styles.chip,
                       {
-                        backgroundColor: active ? "rgba(73,8,176,0.86)" : glass,
-                        borderColor: active ? "rgba(73,8,176,0.20)" : border,
+                        backgroundColor: active ? colors.text : glass,
+                        borderColor: active ? colors.text : border,
                       },
                     ]}
                   >
@@ -528,7 +528,7 @@ export default function CreateScreen() {
                       style={[
                         styles.chipText,
                         {
-                          color: active ? "#fff" : colors.text,
+                          color: active ? colors.bg : colors.text,
                           fontFamily: active ? fonts.strong : fonts.body,
                         },
                       ]}
