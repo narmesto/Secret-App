@@ -161,7 +161,7 @@ export default function MapScreen() {
       const name = nameRaw === null || nameRaw === undefined ? "" : String(nameRaw);
 
       const safeId = id || (name ? `name:${name}` : `row:${idx}`);
-      return { id: safeId, name: (name || "untitled").toLowerCase() };
+      return { id: safeId, name: name || "untitled" };
     });
 
     setAllCategories(dedupeByKey(cleaned, (c) => c.id));
@@ -204,7 +204,7 @@ export default function MapScreen() {
         lat: Number(e.lat),
         lng: Number(e.lng),
         cover_image: e.cover_image ?? null,
-        categories: extractCategoryNames(e.event_categories).map((x) => x.toLowerCase()),
+        categories: extractCategoryNames(e.event_categories),
       }));
 
     setPins(dedupeByKey(cleaned, (e) => e.id));
@@ -296,7 +296,7 @@ export default function MapScreen() {
         lat: Number(e.lat),
         lng: Number(e.lng),
         cover_image: e.cover_image ?? null,
-        categories: extractCategoryNames(e.event_categories).map((x) => x.toLowerCase()),
+        categories: extractCategoryNames(e.event_categories),
       }));
 
     setSearchResults(dedupeByKey(cleaned, (e) => e.id));
@@ -476,7 +476,7 @@ export default function MapScreen() {
                       />
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.resultTitle, { color: text, fontFamily: fonts.display }]} numberOfLines={1}>
-                          {item.title.toLowerCase()}
+                          {item.title}
                         </Text>
                         <Text
                           style={[
@@ -488,8 +488,8 @@ export default function MapScreen() {
                           ]}
                           numberOfLines={1}
                         >
-                          {new Date(item.start_time).toLocaleString().toLowerCase()}
-                          {item.location ? ` • ${item.location.toLowerCase()}` : ""}
+                          {new Date(item.start_time).toLocaleString()}
+                          {item.location ? ` • ${item.location}` : ""}
                         </Text>
                       </View>
                       <Ionicons name="chevron-forward" size={16} color={placeholder} />
@@ -550,7 +550,7 @@ export default function MapScreen() {
                     { color: active ? activeChipText : text, fontFamily: fonts.strong },
                   ]}
                 >
-                  {item.name.toLowerCase()}
+                  {item.name}
                 </Text>
               </Pressable>
             );
@@ -639,7 +639,7 @@ function EventBubbleMarker({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  muted: { marginTop: 8, fontWeight: "700", textTransform: "lowercase" },
+  muted: { marginTop: 8, fontWeight: "700" },
 
   topWrap: { position: "absolute", top: 54, left: 14, right: 14 },
 

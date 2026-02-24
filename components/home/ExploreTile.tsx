@@ -31,10 +31,10 @@ export function ExploreTile({
         <Ionicons name={icon} size={24} color={colors.primary} />
       </View>
       <Text style={[styles.label, { color: colors.text, fontFamily: fonts.strong }]}>
-        {label.toLowerCase()}
+        {label}
       </Text>
       <Text style={[styles.hint, { color: colors.muted, fontFamily: fonts.body }]}>
-        {hint.toLowerCase()}
+        {hint}
       </Text>
     </Pressable>
   );

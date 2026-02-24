@@ -69,12 +69,12 @@ export default function EditProfileScreen() {
     if (error) {
       console.log("[edit profile fetch error]", error.message);
       // still let them edit locally
-      setdisplay_name((user.email?.split("@")[0] ?? "user").toLowerCase());
+      setdisplay_name(user.email?.split("@")[0] ?? "user");
       setBusy(false);
       return;
     }
 
-    setdisplay_name((data?.display_name ?? user.email?.split("@")[0] ?? "user").toLowerCase());
+    setdisplay_name(data?.display_name ?? user.email?.split("@")[0] ?? "user");
     setAvatarUrl(data?.avatar_url ?? null);
 
     setBusy(false);
@@ -88,11 +88,10 @@ export default function EditProfileScreen() {
   }, [user, avatarLocalUri, avatarUrl, display_name]);
 
   function cleandisplay_name(s: string) {
-    // lowercase, letters/numbers/underscore only
+    // letters/numbers/underscore only
     return s
-      .toLowerCase()
       .replace(/\s+/g, "_")
-      .replace(/[^a-z0-9_]/g, "")
+      .replace(/[^a-zA-Z0-9_]/g, "")
       .slice(0, 24);
   }
 
@@ -273,7 +272,7 @@ export default function EditProfileScreen() {
                 autoCapitalize="none"
               />
               <Text style={[styles.hint, { color: colors.muted, fontFamily: fonts.body }]}>
-                letters, numbers, underscore. lowercase only.
+                letters, numbers, underscore.
               </Text>
             </Field>
 
@@ -318,7 +317,7 @@ function Field({
   return (
     <View style={{ marginTop: 14 }}>
       <Text style={[styles.label, { color: colors.muted, fontFamily: fonts.body }]}>
-        {label.toLowerCase()}
+        {label}
       </Text>
       <View style={{ marginTop: 8 }}>{children}</View>
     </View>
@@ -342,7 +341,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  headerTitle: { flex: 1, fontSize: 16, fontWeight: "800", textTransform: "lowercase" },
+  headerTitle: { flex: 1, fontSize: 16, fontWeight: "800" },
   saveBtn: {
     height: 38,
     paddingHorizontal: 14,
@@ -351,7 +350,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  saveText: { fontWeight: "800", textTransform: "lowercase" },
+  saveText: { fontWeight: "800" },
 
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   container: { paddingHorizontal: 16, paddingBottom: 24 },
@@ -367,8 +366,8 @@ const styles = StyleSheet.create({
   },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: "#222" },
 
-  label: { fontSize: 12, fontWeight: "700", letterSpacing: 0.2, textTransform: "lowercase" },
-  hint: { marginTop: 6, fontSize: 12, fontWeight: "600", textTransform: "lowercase" },
+  label: { fontSize: 12, fontWeight: "700", letterSpacing: 0.2 },
+  hint: { marginTop: 6, fontSize: 12, fontWeight: "600" },
 
   input: {
     height: 46,
@@ -376,7 +375,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 14,
     fontWeight: "700",
-    textTransform: "lowercase",
   },
 
   btn: {
@@ -388,7 +386,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  btnText: { fontWeight: "800", textTransform: "lowercase" },
+  btnText: { fontWeight: "800" },
 
   section: {
     marginTop: 18,
@@ -396,8 +394,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
   },
-  sectionTitle: { fontSize: 14, fontWeight: "800", textTransform: "lowercase" },
-  sectionSub: { marginTop: 6, fontSize: 12, fontWeight: "600", lineHeight: 16, textTransform: "lowercase" },
+  sectionTitle: { fontSize: 14, fontWeight: "800" },
+  sectionSub: { marginTop: 6, fontSize: 12, fontWeight: "600", lineHeight: 16 },
 
   btnWide: {
     marginTop: 12,
@@ -408,5 +406,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 14,
   },
-  btnWideText: { fontWeight: "800", textTransform: "lowercase" },
+  btnWideText: { fontWeight: "800" },
 });

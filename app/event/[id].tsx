@@ -524,11 +524,11 @@ export default function EventDetail() {
                 <View style={{ flex: 1 }} />
 
                 <Text style={[styles.title, { fontFamily: fonts.display }]} numberOfLines={2}>
-                  {String(event.title ?? "").toLowerCase()}
+                  {String(event.title ?? "")}
                 </Text>
 
                 <Text style={[styles.meta, { fontFamily: fonts.body }]} numberOfLines={1}>
-                  {formatWhen(event.start_time).toLowerCase()}
+                  {formatWhen(event.start_time)}
                 </Text>
 
 
@@ -539,7 +539,7 @@ export default function EventDetail() {
                   <View style={styles.locationBubble}>
                     {event.location_privacy === "public" || locationRequestStatus === "approved" ? (
                       <Text style={[styles.locationBubbleText, { fontFamily: fonts.body }]} numberOfLines={1}>
-                        {(event.location ?? "location tbd").toLowerCase()}
+                        {(event.location ?? "location tbd")}
                         {typeof milesAway === "number" ? ` • ${milesAway.toFixed(1)} mi` : ""}
                       </Text>
                     ) : event.location_privacy === "private" ? (
@@ -587,11 +587,11 @@ export default function EventDetail() {
                         key={`${event.id}-${t}`}
                         style={[
                           styles.tag,
-                          { backgroundColor: "rgba(73,8,176,0.16)", borderColor: "rgba(255,255,255,0.18)" },
+                          { backgroundColor: "rgba(0,0,0,0.5)", borderColor: "rgba(255,255,255,0.18)" },
                         ]}
                       >
                         <Text style={[styles.tagText, { fontFamily: fonts.strong }]}>
-                          {String(t).toLowerCase()}
+                          {String(t)}
                         </Text>
                       </View>
                     ))}
@@ -614,7 +614,7 @@ export default function EventDetail() {
                   style={[
                     styles.actionBtn,
                     { borderColor: colors.border },
-                    isRsvped ? { backgroundColor: "rgba(73,8,176,0.14)" } : null,
+                    isRsvped ? { backgroundColor: "rgba(0,0,0,0.5)" } : null,
                   ]}
                 >
                   <Ionicons
@@ -632,7 +632,7 @@ export default function EventDetail() {
                   style={[
                     styles.actionBtn,
                     { borderColor: colors.border },
-                    isSaved ? { backgroundColor: "rgba(73,8,176,0.14)" } : null,
+                    isSaved ? { backgroundColor: "rgba(0,0,0,0.5)" } : null,
                   ]}
                 >
                   <Ionicons

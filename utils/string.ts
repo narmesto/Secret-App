@@ -3,5 +3,5 @@ export function initialsAvatar(seed: string) {
 }
 
 export function normalize(s: string) {
-  return (s ?? "").trim().toLowerCase();
+  return (s ?? "").trim();
 }

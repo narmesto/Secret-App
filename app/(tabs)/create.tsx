@@ -71,11 +71,11 @@ function isAddressLike(r: any) {
 
 function normalizeKey(addr: any) {
   if (!addr) return "";
-  const street = [addr.house_number, addr.road].filter(Boolean).join(" ").toLowerCase();
+  const street = [addr.house_number, addr.road].filter(Boolean).join(" ");
   const city =
-    (addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || "").toLowerCase();
-  const state = String(addr.state || "").toLowerCase();
-  const zip = String(addr.postcode || "").toLowerCase();
+    (addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || "");
+  const state = String(addr.state || "");
+  const zip = String(addr.postcode || "");
   return `${street}|${city}|${state}|${zip}`.replace(/\s+/g, " ").trim();
 }
 
@@ -88,7 +88,7 @@ function formatUSAddress(addr: any) {
 
   const line2 = [city, state].filter(Boolean).join(", ");
   const out = [street, line2, zip].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
-  return out.toLowerCase();
+  return out;
 }
 
 async function nominatimSearchUS(query: string): Promise<NominatimResult[]> {
@@ -196,7 +196,7 @@ export default function CreateScreen() {
       const id = safeString(c?.id);
       const name = safeString(c?.name);
       const safeId = id || (name ? `name:${name}` : `row:${idx}`);
-      return { id: safeId, name: (name || "untitled").toLowerCase() };
+      return { id: safeId, name: (name || "untitled") };
     });
 
     setAllCategories(dedupeByKey(cleaned, (x) => x.id));
@@ -473,7 +473,7 @@ export default function CreateScreen() {
             >
               <Ionicons name="calendar-outline" size={18} color={colors.text} />
               <Text style={{ color: colors.text, fontWeight: "700", fontFamily: fonts.body }}>
-                {formatForDisplay(startDate).toLowerCase()}
+                {formatForDisplay(startDate)}
               </Text>
             </Pressable>
 

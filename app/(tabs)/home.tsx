@@ -6,6 +6,7 @@ import {
   Alert,
   Modal,
   Pressable,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -26,7 +27,7 @@ import { dedupeByKey } from "../../utils/array";
 import { milesBetween } from "../../utils/geo";
 import { scoreMatch } from "../../utils/search";
 import { normalize } from "../../utils/string";
-import { isSameLocalDay } from "../../utils/time";
+
 
 type Suggestion = {
   label: string;
@@ -56,6 +57,7 @@ export default function HomeScreen() {
 
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [searchText, setSearchText] = useState<string>("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -135,6 +137,12 @@ export default function HomeScreen() {
     setLoading(false);
   }
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await init();
+    setRefreshing(false);
+  }, []);
+
   async function fetchCategories() {
     const { data, error } = await supabase.from("categories").select("id, name").order("name");
     if (error) {
@@ -201,7 +209,7 @@ export default function HomeScreen() {
       lng: e.lng ?? null,
       owner_id: e.owner_id ?? null,
       event_categories: e.event_categories ?? null,
-      categories: extractCategoryNames(e.event_categories).map((x) => x.toLowerCase()),
+      categories: extractCategoryNames(e.event_categories),
       ministry_id: e.ministry_id ?? null,
       ministries: e.ministries ?? null,
     }));
@@ -251,7 +259,7 @@ export default function HomeScreen() {
 
     const seen = new Set<string>();
     const deduped = pool.filter((s) => {
-      const key = `${s.type}:${normalize(s.label)}`;
+      const key = `${s.type}:${s.label}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -323,15 +331,7 @@ export default function HomeScreen() {
     return filteredEvents.filter((e) => new Date(e.start_time).getTime() >= now).slice(0, 25);
   }, [filteredEvents, now]);
 
-  const startingSoon = useMemo(() => {
-    return filteredEvents
-      .filter((e) => {
-        const dt = new Date(e.start_time);
-        const t = dt.getTime();
-        return isSameLocalDay(dt, today) && t >= now;
-      })
-      .slice(0, 20);
-  }, [filteredEvents, today, now]);
+
 
 
   async function toggleSave(eventId: string) {
@@ -411,11 +411,6 @@ export default function HomeScreen() {
                     <Ionicons name="options-outline" size={24} color={colors.text} />
                 </Pressable>
             ),
-            headerRight: () => (
-                <Pressable onPress={init} style={{ marginRight: 12 }}>
-                    <Ionicons name="refresh" size={24} color={colors.text} />
-                </Pressable>
-            ),
         });
     }, [navigation, colors, init, appliedFilterRadius, appliedFilterCategories]);
 
@@ -427,6 +422,7 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
       >
         <View style={[styles.searchWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Ionicons name="search" size={18} color={colors.muted} />
@@ -461,7 +457,7 @@ export default function HomeScreen() {
           <View style={[styles.suggestBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {suggestions.map((s, idx) => (
               <Pressable
-                key={`sg-${s.type}-${normalize(s.label)}-${idx}`}
+                key={`sg-${s.type}-${s.label}-${idx}`}
                 onPress={() => {
                   setSearchText(String(s.label));
                   setShowSuggestions(false);
@@ -474,7 +470,7 @@ export default function HomeScreen() {
               >
                 <Ionicons name={iconForSuggestionType(s.type)} size={16} color={colors.muted} />
                 <Text style={[styles.suggestText, { color: colors.text, fontFamily: fonts.strong }]} numberOfLines={1}>
-                  {String(s.label).toLowerCase()}
+                  {String(s.label)}
                 </Text>
                 <View style={{ flex: 1 }} />
                 <Text style={[styles.suggestType, { color: colors.muted, fontFamily: fonts.body }]}>
@@ -494,25 +490,7 @@ export default function HomeScreen() {
         <View style={{ gap: 32 }}>
 
 
-          {!loading && startingSoon.length > 0 ? (
-            <View>
-              <SectionHeader title="Starting Today" />
-              <View>
-                {startingSoon.map((event) => (
-                  <EventImageCard
-                    key={event.id}
-                    event={event}
-                    variant="large"
-                    saved={savedIds.has(event.id)}
-                    saving={saveBusy.has(event.id)}
-                    onToggleSave={() => toggleSave(event.id)}
-                    friendSaveCount={friendSaveCounts[event.id] || 0}
-                    onPress={() => router.push(`/event/${event.id}`)}
-                  />
-                ))}
-              </View>
-            </View>
-          ) : null}
+
 
           <View>
             <SectionHeader title="Spotlight" subtitle="All upcoming gatherings" />

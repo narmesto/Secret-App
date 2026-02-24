@@ -12,11 +12,11 @@ export function SectionHeader({
   return (
     <View style={{ paddingTop: 24, paddingBottom: 12, paddingHorizontal: 20 }}>
       <Text style={{ fontSize: 22, fontFamily: fonts.display, color: colors.text }}>
-        {title.toLowerCase()}
+        {title}
       </Text>
       {subtitle ? (
         <Text style={{ marginTop: 2, fontSize: 15, fontFamily: fonts.body, color: colors.muted }}>
-          {subtitle.toLowerCase()}
+          {subtitle}
         </Text>
       ) : null}
     </View>

@@ -22,11 +22,11 @@ function isAddressLike(r: any) {
 
 function normalizeKey(addr: any) {
   if (!addr) return "";
-  const street = [addr.house_number, addr.road].filter(Boolean).join(" ").toLowerCase();
+  const street = [addr.house_number, addr.road].filter(Boolean).join(" ");
   const city =
-    (addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || "").toLowerCase();
-  const state = String(addr.state || "").toLowerCase();
-  const zip = String(addr.postcode || "").toLowerCase();
+    (addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || "");
+  const state = String(addr.state || "");
+  const zip = String(addr.postcode || "");
   return `${street}|${city}|${state}|${zip}`.replace(/\s+/g, " ").trim();
 }
 
@@ -39,7 +39,7 @@ export function formatUSAddress(addr: any) {
 
   const line2 = [city, state].filter(Boolean).join(", ");
   const out = [street, line2, zip].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
-  return out.toLowerCase();
+  return out;
 }
 
 export async function nominatimSearchUS(query: string): Promise<NominatimResult[]> {

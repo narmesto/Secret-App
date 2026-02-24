@@ -160,7 +160,7 @@ export function EventImageCard({
             }}
             numberOfLines={1}
           >
-            {event.title.toLowerCase()}
+            {event.title}
           </Text>
           <Text
             style={{
@@ -171,7 +171,7 @@ export function EventImageCard({
             }}
             numberOfLines={1}
           >
-            {formatWhen(event.start_time).toLowerCase()}
+            {formatWhen(event.start_time)}
           </Text>
           {friendSaveCount > 0 && (
             <View style={styles.smallFriendSaveBadge}>
@@ -194,7 +194,7 @@ export function EventImageCard({
               style={styles.ownerAvatar}
             />
             <Text style={[styles.ownerName, { fontFamily: fonts.body }]}>
-              {(owner.display_name || '').toLowerCase()}
+              {(owner.display_name || '')}
             </Text>
           </View>
         )}
@@ -212,10 +212,10 @@ export function EventImageCard({
         <View style={styles.largeCardInfoBar}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.largeCardTitle, { fontFamily: fonts.display }]}>
-              {event.title.toLowerCase()}
+              {event.title}
             </Text>
             <Text style={[styles.largeCardSubtitle, { fontFamily: fonts.body }]}>
-              {formatWhen(event.start_time).toLowerCase()} • {event.location || "location tbd"}
+              {formatWhen(event.start_time)} • {event.location || "location tbd"}
             </Text>
           </View>
           <Pressable onPress={onToggleSave} style={styles.largeCardSaveBtn}>
