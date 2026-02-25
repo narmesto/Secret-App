@@ -8,6 +8,7 @@ export type ThemeColors = {
   bg: string;
   card: string;
   card2: string;
+  background: string;
 
   // text
   text: string;
@@ -18,6 +19,7 @@ export type ThemeColors = {
 
   // brand
   primary: string;
+  primaryText: string;
 
   // tab bar
   tabBarBg: string;
@@ -40,20 +42,22 @@ type ThemeValue = {
 
 const ThemeContext = createContext<ThemeValue | null>(null);
 
-const PRIMARY = "#000";
+const PRIMARY_BRAND = "rgba(73,8,176,0.95)";
 
 // Clean / minimal surfaces (matches your desired vibe)
 const lightColors: ThemeColors = {
   bg: "#F7F7F7",
   card: "#FFFFFF",
   card2: "#FFFFFF",
+  background: "#F7F7F7",
 
   text: "#1C1C1E",
   muted: "#8A8A8E",
 
   border: "#E5E5E5",
 
-  primary: PRIMARY,
+  primary: PRIMARY_BRAND,
+  primaryText: "#fff",
 
   tabBarBg: "#FFFFFF",
   tabBarBorder: "#E5E5E5",
@@ -63,13 +67,15 @@ const darkColors: ThemeColors = {
   bg: "#121212",
   card: "#1E1E1E",
   card2: "#282828",
+  background: "#121212",
 
   text: "#fff",
   muted: "#999",
 
   border: "#333",
 
-  primary: PRIMARY,
+  primary: PRIMARY_BRAND,
+  primaryText: "#fff",
 
   tabBarBg: "#121212",
   tabBarBorder: "#333",

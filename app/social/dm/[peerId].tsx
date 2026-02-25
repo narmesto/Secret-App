@@ -39,6 +39,7 @@ type डीएमSearchParams = {
 export default function DMConversation() {
   const { user } = useAuth();
   const { colors, resolvedScheme, fonts } = useTheme();
+  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
   const isDark = resolvedScheme === "dark";
 
@@ -92,9 +93,10 @@ export default function DMConversation() {
         id: String(data.id),
         display_name: data.display_name ?? null,
         avatar_url: data.avatar_url ?? null,
+        username: data.display_name ?? 'user',
       });
     } else {
-      setPeer({ id: peerId, display_name: "user", avatar_url: null });
+      setPeer({ id: peerId, display_name: "user", avatar_url: null, username: 'user' });
     }
   }, [peerId]);
 
@@ -256,7 +258,32 @@ export default function DMConversation() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTransparent: false,
+          headerStyle: { backgroundColor: colors.bg },
+          headerTitle: () => (
+            <View style={styles.headerContainer}>
+              <Image source={{ uri: avatar }} style={styles.headerAvatar} />
+              <View style={styles.headerTitleContainer}>
+                <Text style={[styles.headerName, { color: colors.text }]} numberOfLines={1}>
+                  {name}
+                </Text>
+              </View>
+            </View>
+          ),
+          headerBackTitle: 'Back',
+          headerRight: () => (
+            <Pressable
+              onPress={() => router.push({ pathname: '/user/[id]', params: { id: peerId } })}
+              style={{ width: 42, height: 42, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
+            </Pressable>
+          ),
+        }}
+      />
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView
           style={{ flex: 1, backgroundColor: colors.bg }}
@@ -272,20 +299,7 @@ export default function DMConversation() {
             </Pressable>
           </View>
 
-          <View style={styles.headerCenter}>
-            <Image source={{ uri: avatar }} style={styles.headerAvatar} />
-            <Text style={[styles.headerName, { color: colors.text, fontFamily: fonts.display }]} numberOfLines={1}>
-              {name}
-            </Text>
-            <Pressable
-              onPress={goViewProfile}
-              style={[styles.viewProfileBtn, { backgroundColor: "rgba(73,8,176,0.12)", borderColor: colors.border }]}
-            >
-              <Text style={[styles.viewProfileText, { color: colors.text, fontFamily: fonts.strong }]}>
-                view profile
-              </Text>
-            </Pressable>
-          </View>
+
 
           <View style={{ flex: 1 }}>
             {loading ? (
@@ -294,35 +308,37 @@ export default function DMConversation() {
                 <Text style={[styles.muted, { color: colors.muted, fontFamily: fonts.body }]}>loading…</Text>
               </View>
             ) : (
-              <FlatList
-                ref={listRef}
-                data={msgs}
-                keyExtractor={(m) => String(m.id)}
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode={Platform.OS === "ios" ? "on-drag" : "none"}
-                contentContainerStyle={{
-                  paddingHorizontal: 14,
-                  paddingTop: 8,
-                  paddingBottom: 12,
-                }}
-                renderItem={({ item }) => {
-                  const mine = item.sender_id === user?.id;
-                  return (
-                    <View
-                      style={[
-                        styles.bubble,
-                        mine ? styles.bubbleMine : styles.bubbleTheirs,
-                        { borderColor: colors.border },
-                      ]}
-                    >
-                      <Text style={[styles.bubbleText, { color: mine ? "#fff" : colors.text, fontFamily: fonts.body }]}>
-                        {String(item.body ?? "").toLowerCase()}
-                      </Text>
-                    </View>
-                  );
-                }}
-                onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-              />
+              <View style={{ flex: 1 }}>
+                <FlatList
+                  ref={listRef}
+                  data={msgs}
+                  keyExtractor={(m) => String(m.id)}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode={Platform.OS === "ios" ? "on-drag" : "none"}
+                  contentContainerStyle={{
+                    paddingHorizontal: 14,
+                    paddingTop: 8,
+                    paddingBottom: 12,
+                  }}
+                  renderItem={({ item }) => {
+                    const mine = item.sender_id === user?.id;
+                    return (
+                      <View
+                        style={[
+                          styles.bubble,
+                          mine ? styles.bubbleMine : styles.bubbleTheirs,
+                          { borderColor: colors.border },
+                        ]}
+                      >
+                        <Text style={[styles.bubbleText, { color: mine ? colors.primaryText : colors.text, fontFamily: fonts.body }]}>
+                          {String(item.body ?? "").toLowerCase()}
+                        </Text>
+                      </View>
+                    );
+                  }}
+                  onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+                />
+              </View>
             )}
           </View>
 
@@ -332,7 +348,7 @@ export default function DMConversation() {
                 value={text}
                 onChangeText={setText}
                 placeholder="message…"
-                placeholderTextColor={isDark ? "rgba(255,255,255,0.45)" : "rgba(17,17,24,0.45)"}
+                placeholderTextColor={colors.muted}
                 style={[styles.input, { color: colors.text, fontFamily: fonts.body }]}
                 multiline={false}
                 returnKeyType="send"
@@ -345,7 +361,7 @@ export default function DMConversation() {
                 style={[
                   styles.sendBtn,
                   {
-                    backgroundColor: "rgba(73,8,176,0.18)",
+                    backgroundColor: glass,
                     borderColor: border,
                     opacity: sending || !text.trim() ? 0.5 : 1,
                   },
@@ -361,7 +377,7 @@ export default function DMConversation() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   muted: { marginTop: 8, fontWeight: "700", textTransform: "lowercase" },
 
@@ -382,7 +398,15 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     gap: 5,
   },
-  headerAvatar: { width: 42, height: 42, borderRadius: 16, backgroundColor: "#111" },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerTitleContainer: {
+    flexDirection: 'column',
+  },
+  headerAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.border },
   headerName: { fontSize: 13, fontWeight: "900", textTransform: "lowercase" },
   viewProfileBtn: {
     height: 28,
@@ -404,10 +428,9 @@ const styles = StyleSheet.create({
   },
   bubbleMine: {
     alignSelf: "flex-end",
-    backgroundColor: "rgba(73,8,176,0.95)",
-    borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: colors.primary,
   },
-  bubbleTheirs: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.06)" },
+  bubbleTheirs: { alignSelf: "flex-start", backgroundColor: colors.card },
   bubbleText: { fontWeight: "700", lineHeight: 18, textTransform: "lowercase" },
 
   composer: {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, FlatList, Alert, SafeAreaView, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import { useAuth } from '../../context/auth';
 import { supabase } from '../../supabase';
 import UserSelectItem from '../../components/social/UserSelectItem';
@@ -46,30 +46,22 @@ export default function Compose() {
     } else {
       // Group
       try {
-        const { data: threadData, error: threadError } = await supabase
-          .from('threads')
-          .insert({})
-          .select('id')
-          .single();
+        const { data, error } = await supabase.rpc('get_or_create_group_thread', {
+          p_user_ids: selectedUsers,
+        });
 
-        if (threadError) throw threadError;
-        const threadId = threadData.id;
+        if (error) throw error;
 
-        const participants = [...selectedUsers, user.id].map(userId => ({
-          thread_id: threadId,
-          user_id: userId,
-        }));
+        const threadId = data[0]?.thread_id;
 
-        const { error: participantsError } = await supabase
-          .from('thread_participants')
-          .insert(participants);
-
-        if (participantsError) throw participantsError;
-
-        router.replace(`/social/group/${threadId}`);
+        if (threadId) {
+          router.replace(`/social/group/${threadId}`);
+        } else {
+          throw new Error('Could not find or create group thread.');
+        }
       } catch (error: any) {
-        console.error('Error creating group:', error);
-        Alert.alert('Error', 'Could not create group. ' + error.message);
+        console.error('Error handling group chat:', error);
+        Alert.alert('Error', 'Could not process group chat. ' + error.message);
       }
     }
   };
@@ -78,6 +70,7 @@ export default function Compose() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+      <Stack.Screen options={{ headerBackTitle: "Back", headerShown: true }} />
       <FlatList
         data={users}
         keyExtractor={item => item.id}
@@ -118,7 +111,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.muted,
   },
   buttonText: {
-    color: 'white',
+    color: colors.card,
     fontWeight: 'bold',
     fontSize: 16,
   },

@@ -25,6 +25,7 @@ import GroupHeaderAvatar from "../../../components/social/GroupHeaderAvatar";
 export default function GroupConversation() {
   const { user } = useAuth();
   const { colors, resolvedScheme, fonts } = useTheme();
+  const styles = makeStyles(colors);
   const insets = useSafeAreaInsets();
   const isDark = resolvedScheme === "dark";
 
@@ -81,24 +82,20 @@ export default function GroupConversation() {
 
     if (userIds.length > 0) {
         const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, display_name, avatar_url')
-            .in('id', userIds);
+                    .from('profiles')
+                    .select('id, display_name, avatar_url')
+                    .in('id', userIds);
 
         if (profilesError) {
             console.error('Error fetching participant profiles', profilesError);
         } else {
-            setParticipants(profiles || []);
+            const transformedProfiles = profiles.map(p => ({ ...p, username: p.display_name || 'user' }));
+                    setParticipants(transformedProfiles || []);
         }
     }
 
     setLoading(false);
   }, [threadId]);
-
-  useEffect(() => {
-    if (!user?.id || !threadId) return;
-    fetchThreadData();
-  }, [user?.id, threadId, fetchThreadData]);
 
   const fetchMessages = useCallback(async () => {
     if (!threadId) return;
@@ -146,12 +143,29 @@ export default function GroupConversation() {
     setMsgs(finalMessages as Message[]);
   }, [threadId]);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchThreadData();
+      fetchMessages();
+
+      const markAsRead = async () => {
+        if (!threadId || !user?.id) return;
+        try {
+          await supabase.rpc("update_last_read_at", {
+            p_thread_id: threadId,
+            p_user_id: user.id,
+          });
+        } catch (error) {
+          console.error("Error marking as read:", error);
+        }
+      };
+
+      markAsRead();
+    }, [fetchThreadData, fetchMessages, threadId, user?.id])
+  );
+
   useEffect(() => {
     if (!threadId) return;
-
-    fetchMessages().then(() => {
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 60);
-    });
 
     const channel = supabase
       .channel(`group-thread-${threadId}`)
@@ -164,33 +178,19 @@ export default function GroupConversation() {
           filter: `thread_id=eq.${threadId}`,
         },
         (payload) => {
-          const newMsg = payload.new as Message;
-          // We need to fetch the sender profile for the new message
-          supabase
-            .from("profiles")
-            .select("id, display_name, avatar_url")
-            .eq("id", newMsg.sender_id)
-            .single()
-            .then(({ data: senderProfile, error }) => {
-              if (error) {
-                console.log("[realtime profile fetch error]", error.message);
-                // Add message even if profile fetch fails
-                setMsgs((prev) => {
-                  if (prev.some((m) => m.id === newMsg.id)) return prev;
-                  return [...prev, newMsg];
-                });
-              } else {
-                const msgWithSender: Message = {
-                  ...newMsg,
-                  sender: senderProfile as any,
-                };
-                setMsgs((prev) => {
-                  if (prev.some((m) => m.id === msgWithSender.id)) return prev;
-                  return [...prev, msgWithSender];
-                });
-              }
-              setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-            });
+          fetchMessages();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "threads",
+          filter: `id=eq.${threadId}`,
+        },
+        (payload) => {
+          fetchThreadData();
         }
       )
       .subscribe((status) => {
@@ -202,26 +202,7 @@ export default function GroupConversation() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [threadId, fetchMessages]);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!threadId || !user?.id) return;
-
-      const markAsRead = async () => {
-        try {
-          await supabase.rpc("update_last_read_at", {
-            p_thread_id: threadId,
-            p_user_id: user.id,
-          });
-        } catch (error) {
-          console.error("Error marking as read:", error);
-        }
-      };
-
-      markAsRead();
-    }, [threadId, user?.id])
-  );
+  }, [threadId, fetchMessages, fetchThreadData]);
 
   async function send() {
     if (!user?.id) {
@@ -265,28 +246,45 @@ export default function GroupConversation() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          headerTransparent: false,
+          headerStyle: { backgroundColor: colors.bg },
+          headerTitle: () => (
+            <View style={styles.headerContainer}>
+              <GroupHeaderAvatar
+                participants={participants as any}
+                size={42}
+                avatar_url={thread?.avatar_url || null}
+              />
+              <View style={styles.headerTitleContainer}>
+                <Text style={[styles.headerName, { color: colors.text }]}>
+                  {thread?.name || 'Group Chat'}
+                </Text>
+                <Text style={{ color: colors.muted, fontSize: 12 }}>
+                  {participants.length} members
+                </Text>
+              </View>
+            </View>
+          ),
+          headerBackTitle: 'Back',
+                            headerRight: () => (
+            <Pressable
+              onPress={() => router.push({ pathname: '/social/group/edit', params: { threadId } })}
+              style={{ width: 42, height: 42, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
+            </Pressable>
+          ),
+        }}
+      />
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <KeyboardAvoidingView
           style={{ flex: 1, backgroundColor: colors.bg }}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           keyboardVerticalOffset={keyboardOffset}
         >
-          <View style={[styles.backRow, { paddingTop: insets.top + 6 }]}>
-            <Pressable
-              onPress={() => router.back()}
-              style={[styles.backBtn, { backgroundColor: glass, borderColor: border }]}
-            >
-              <Ionicons name="chevron-back" size={20} color={colors.text} />
-            </Pressable>
-          </View>
-
-          <View style={styles.headerCenter}>
-            <GroupHeaderAvatar participants={participants} size={42} />
-            <Text style={[styles.headerName, { color: colors.text, fontFamily: fonts.display }]} numberOfLines={1}>
-                {thread?.name || 'Group Chat'}
-            </Text>
-          </View>
 
           <View style={{ flex: 1 }}>
             {loading ? (
@@ -316,7 +314,7 @@ export default function GroupConversation() {
                         { borderColor: colors.border },
                       ]}
                     >
-                      <Text style={[styles.bubbleText, { color: mine ? "#fff" : colors.text, fontFamily: fonts.body }]}>
+                      <Text style={[styles.bubbleText, { color: mine ? colors.primaryText : colors.text, fontFamily: fonts.body }]}>
                         {String(item.body ?? "").toLowerCase()}
                       </Text>
                     </View>
@@ -333,7 +331,7 @@ export default function GroupConversation() {
                 value={text}
                 onChangeText={setText}
                 placeholder="message…"
-                placeholderTextColor={isDark ? "rgba(255,255,255,0.45)" : "rgba(17,17,24,0.45)"}
+                placeholderTextColor={colors.muted}
                 style={[styles.input, { color: colors.text, fontFamily: fonts.body }]}
                 multiline={false}
                 returnKeyType="send"
@@ -346,7 +344,7 @@ export default function GroupConversation() {
                 style={[
                   styles.sendBtn,
                   {
-                    backgroundColor: "rgba(73,8,176,0.18)",
+                    backgroundColor: glass,
                     borderColor: border,
                     opacity: sending || !text.trim() ? 0.5 : 1,
                   },
@@ -362,7 +360,7 @@ export default function GroupConversation() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: any) => StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   muted: { marginTop: 8, fontWeight: "700", textTransform: "lowercase" },
 
@@ -376,14 +374,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  headerCenter: {
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: 6,
-    gap: 5,
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerTitleContainer: {
+    flexDirection: 'column',
   },
   headerName: { fontSize: 13, fontWeight: "900", textTransform: "lowercase" },
+  headerRightButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   bubble: {
     maxWidth: "82%",
     paddingHorizontal: 12,
@@ -394,10 +402,9 @@ const styles = StyleSheet.create({
   },
   bubbleMine: {
     alignSelf: "flex-end",
-    backgroundColor: "rgba(73,8,176,0.95)",
-    borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: colors.primary,
   },
-  bubbleTheirs: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.06)" },
+  bubbleTheirs: { alignSelf: "flex-start", backgroundColor: colors.card },
   bubbleText: { fontWeight: "700", lineHeight: 18, textTransform: "lowercase" },
 
   composer: {

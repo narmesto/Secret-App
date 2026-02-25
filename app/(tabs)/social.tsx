@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Text, View, TouchableOpacity, TextInput, StyleSheet, Image } from "react-native";
+import { FlatList, Text, View, TouchableOpacity, TextInput, StyleSheet, Image, RefreshControl } from "react-native";
 import { useAuth } from "../../context/auth";
 import { supabase } from "../../supabase";
 import { Stack, useFocusEffect, useRouter } from "expo-router";
@@ -28,7 +28,7 @@ const CreateButton = () => {
       onPress={() => router.push("/social/compose")}
       style={{ marginRight: 10 }}
     >
-      <Feather name="edit" size={24} color={colors.primary} />
+      <Feather name="edit" size={24} color={colors.text} />
     </TouchableOpacity>
   );
 };
@@ -39,6 +39,7 @@ export default function Social() {
   const { colors } = useTheme();
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
@@ -62,6 +63,12 @@ export default function Social() {
     setLoading(false);
   }, [user]);
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchThreads();
+    setRefreshing(false);
+  }, [fetchThreads]);
+
   useEffect(() => {
     const searchUsers = async () => {
       if (searchQuery.trim() === "") {
@@ -70,9 +77,9 @@ export default function Social() {
       }
 
       const { data, error } = await supabase
-        .from("profiles_public")
-        .select("id, username, avatar_url:profiles!inner(avatar_url)")
-        .or(`username.ilike.%${searchQuery}%`)
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .ilike("display_name", `%${searchQuery}%`)
         .neq("id", user?.id);
 
       if (error) {
@@ -96,42 +103,14 @@ export default function Social() {
     }, [fetchThreads])
   );
 
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = supabase
-      .channel("social_feed")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "dm_messages",
-        },
-        (payload) => {
-          fetchThreads();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_messages",
-        },
-        (payload) => {
-          fetchThreads();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, fetchThreads]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchThreads();
+    }, [fetchThreads])
+  );
 
   const handleSearchResultPress = (peer: any) => {
-    router.push(`/social/dm/${peer.id}`);
+    router.push({ pathname: '/user/[id]', params: { id: peer.id } });
   };
 
   const renderSearchResult = ({ item }: { item: any }) => (
@@ -142,7 +121,7 @@ export default function Social() {
           style={styles.searchResultAvatar}
         />
         <View>
-          <Text style={styles.searchResultName}>{item.username}</Text>
+          <Text style={styles.searchResultName}>{item.display_name}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -155,13 +134,20 @@ export default function Social() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerRight: () => <CreateButton /> }} />
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Search for users..."
-        placeholderTextColor={colors.muted}
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchBar}
+          placeholder="Search for users..."
+          placeholderTextColor={colors.muted}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.trim() !== "" && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+            <Feather name="x" size={20} color={colors.muted} />
+          </TouchableOpacity>
+        )}
+      </View>
       {searchQuery.trim() !== "" ? (
         <FlatList
           data={searchResults}
@@ -175,6 +161,7 @@ export default function Social() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <ConversationCard thread={item} />}
           ListEmptyComponent={<Text style={styles.emptyText}>No conversations yet.</Text>}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />}
         />
       )}
     </View>
@@ -186,15 +173,23 @@ const makeStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  searchBar: {
-    padding: 12,
-    backgroundColor: colors.card,
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     margin: 10,
-    borderRadius: 10,
+    backgroundColor: colors.card,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  searchBar: {
+    flex: 1,
+    padding: 12,
     fontSize: 16,
     color: colors.text,
+  },
+  clearButton: {
+    padding: 12,
   },
   searchResultItem: {
     flexDirection: 'row',

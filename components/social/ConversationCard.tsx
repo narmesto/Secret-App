@@ -67,8 +67,18 @@ export default function ConversationCard({ thread }: ConversationCardProps) {
       );
     }
 
-    // Group Chat Avatar Logic (unchanged)
-    const borderRadius = 16;
+    // Group Chat Avatar Logic
+    if (thread.avatar_url) {
+      return (
+        <Image
+          source={getAvatarSource(thread.avatar_url, thread.title)}
+          style={{ width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2, backgroundColor: colors.card }}
+        />
+      );
+    }
+
+    const borderRadius = avatarSize / 2;
+
     if (otherParticipants.length === 0) {
       return (
         <View style={[styles.avatarContainer, { width: avatarSize, height: avatarSize, borderRadius, backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center' }]}>
@@ -76,40 +86,35 @@ export default function ConversationCard({ thread }: ConversationCardProps) {
         </View>
       );
     }
-    if (otherParticipants.length === 1) {
-      return (
-        <Image
-          source={getAvatarSource(otherParticipants[0].avatar_url, otherParticipants[0].username)}
-          style={{ width: avatarSize, height: avatarSize, borderRadius, backgroundColor: colors.card }}
-        />
-      );
-    }
-    if (otherParticipants.length > MAX_AVATARS_IN_GRID) {
-      const shownParticipants = otherParticipants.slice(0, MAX_AVATARS_IN_GRID - 1);
-      const totalRemaining = otherParticipants.length - shownParticipants.length;
-      return (
-        <View style={[styles.gridContainer, { width: avatarSize, height: avatarSize, borderRadius }]}>
-          {shownParticipants.map((p) => (
-            <Image
-              key={p.id}
-              source={getAvatarSource(p.avatar_url, p.username)}
-              style={[styles.gridImage, { width: avatarSize / 2, height: avatarSize / 2 }]}
-            />
-          ))}
-          <View style={[styles.plusContainer, { width: avatarSize / 2, height: avatarSize / 2, backgroundColor: colors.card }]}>
-            <Text style={{ color: colors.text, fontSize: avatarSize * 0.25 }}>+{totalRemaining}</Text>
-          </View>
-        </View>
-      );
-    }
+
+    // New dynamic layout for group avatars
+    const participantsToShow = otherParticipants.slice(0, 4);
+    const numParticipants = participantsToShow.length;
+
+    const getAvatarStyle = (index: number): import('react-native').ViewStyle => {
+      if (numParticipants === 1) {
+        return { width: '100%', height: '100%' };
+      }
+      if (numParticipants === 2) {
+        return { width: '50%', height: '100%' };
+      }
+      if (numParticipants === 3) {
+        if (index === 0) return { width: '100%', height: '50%' };
+        return { width: '50%', height: '50%' };
+      }
+      // 4 participants
+      return { width: '50%', height: '50%' };
+    };
+
     return (
-      <View style={[styles.gridContainer, { width: avatarSize, height: avatarSize, borderRadius }]}>
-        {otherParticipants.map((p) => (
-          <Image
-            key={p.id}
-            source={getAvatarSource(p.avatar_url, p.username)}
-            style={[styles.gridImage, { width: avatarSize / 2, height: avatarSize / 2 }]}
-          />
+      <View style={[styles.gridContainer, { width: avatarSize, height: avatarSize, borderRadius, overflow: 'hidden' }]}>
+        {participantsToShow.map((p, index) => (
+          <View key={p.id} style={getAvatarStyle(index)}>
+            <Image
+              source={getAvatarSource(p.avatar_url, p.username)}
+              style={{ width: '100%', height: '100%' }}
+            />
+          </View>
         ))}
       </View>
     );

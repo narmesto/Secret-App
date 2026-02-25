@@ -463,7 +463,7 @@ export default function PublicUserProfile() {
         {/* header card */}
         <View style={{ paddingHorizontal: 16, paddingTop: insets.top + 56 }}>
           <View style={[styles.headerCard, { backgroundColor: colors.card2, borderColor: colors.border }]}>
-            <Image source={{ uri: avatarUri }} style={styles.avatar} />
+            <Image source={{ uri: avatarUri }} style={[styles.avatar, { backgroundColor: colors.border, borderColor: colors.bg }]} />
 
             <Text style={[styles.name, { color: colors.text, fontFamily: fonts.display }]} numberOfLines={1}>
               {displayName}
@@ -472,7 +472,7 @@ export default function PublicUserProfile() {
             <View style={styles.actionRow}>
               <Pressable
                 onPress={onMessage}
-                style={[styles.actionBtn, { backgroundColor: "rgba(73,8,176,0.14)", borderColor: colors.border }]}
+                style={[styles.actionBtn, { backgroundColor: glass, borderColor: colors.border }]}
               >
                 <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.text} />
                 <Text style={[styles.actionText, { color: colors.text, fontFamily: fonts.strong }]}>message</Text>
@@ -484,7 +484,7 @@ export default function PublicUserProfile() {
                 style={[
                   styles.actionBtn,
                   {
-                    backgroundColor: isFriend ? "rgba(73,8,176,0.22)" : glass,
+                    backgroundColor: glass,
                     borderColor: colors.border,
                     opacity: !canAddFriend || addBusy ? 0.6 : 1,
                   },
@@ -617,72 +617,120 @@ function EmptyCard({
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   muted: { opacity: 0.75, fontWeight: "700", textTransform: "lowercase" },
-
   topBar: {
     position: "absolute",
-    zIndex: 10,
+    top: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 14,
+    zIndex: 1,
+    paddingHorizontal: 16,
     flexDirection: "row",
-    alignItems: "center",
+    justifyContent: "space-between",
   },
   topBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1,
+    width: 38,
+    height: 38,
+    borderRadius: 99,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
   },
-
   headerCard: {
-    borderRadius: 18,
+    paddingTop: 60,
+    paddingBottom: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 14,
     alignItems: "center",
-    gap: 10,
   },
-  avatar: { width: 74, height: 74, borderRadius: 26, backgroundColor: "#111" },
-  name: { fontSize: 16, fontWeight: "900", textTransform: "lowercase" },
-
-  actionRow: { flexDirection: "row", gap: 10, width: "100%" },
-  actionBtn: {
-    flex: 1,
-    height: 40,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 999,
+    position: "absolute",
+    top: -50,
+    alignSelf: "center",
+    borderWidth: 4,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: "900",
+    textTransform: "lowercase",
+  },
+  actionRow: {
+    marginTop: 12,
     flexDirection: "row",
     gap: 8,
   },
-  actionText: { fontWeight: "900", fontSize: 12, textTransform: "lowercase" },
-
-  statsRow: { flexDirection: "row", gap: 10 },
-  statBtn: { flex: 1, borderRadius: 16, borderWidth: 1, padding: 12, alignItems: "center" },
-  statValue: { fontSize: 16, fontWeight: "900", textTransform: "lowercase" },
-  statLabel: { marginTop: 4, fontSize: 12, fontWeight: "700", textTransform: "lowercase" },
-
-  empty: {
-    borderRadius: 18,
+  actionBtn: {
+    flex: 1,
+    height: 38,
+    borderRadius: 99,
     borderWidth: 1,
-    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+  },
+  actionText: {
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  statsRow: {
     flexDirection: "row",
     gap: 10,
-    alignItems: "center",
   },
-  emptyText: { fontWeight: "600", flex: 1, lineHeight: 18, textTransform: "lowercase" },
-
-  rowCard: {
-    borderRadius: 18,
+  statBtn: {
+    flex: 1,
+    height: 72,
+    borderRadius: 12,
     borderWidth: 1,
-    padding: 12,
-    flexDirection: "row",
-    gap: 12,
     alignItems: "center",
+    justifyContent: "center",
   },
-  rowAvatar: { width: 54, height: 54, borderRadius: 16, backgroundColor: "#111" },
-  rowTitle: { fontSize: 14, fontWeight: "900", textTransform: "lowercase" },
-  rowSub: { marginTop: 3, fontSize: 12, fontWeight: "700", textTransform: "lowercase" },
+  statValue: {
+    fontSize: 20,
+    fontWeight: "900",
+    textTransform: "lowercase",
+  },
+  statLabel: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    opacity: 0.7,
+  },
+  empty: {
+    height: 120,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    flexDirection: "row",
+  },
+  emptyText: {
+    fontSize: 14,
+    fontWeight: "700",
+    textTransform: "lowercase",
+  },
+  rowCard: {
+    height: 72,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 10,
+  },
+  rowAvatar: { width: 42, height: 42, borderRadius: 999, backgroundColor: "#111" },
+  rowTitle: { fontSize: 16, fontWeight: "900", textTransform: "lowercase" },
+  rowSub: {
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "lowercase",
+    opacity: 0.7,
+    marginTop: 1,
+  },
 });
