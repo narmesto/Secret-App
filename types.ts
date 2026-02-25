@@ -24,6 +24,7 @@ export type EventRow = {
 export type Profile = {
   id: string;
   display_name: string | null;
+  username: string | null;
   avatar_url: string | null;
 };
 
@@ -33,4 +34,12 @@ export type Message = {
   sender_id: string;
   body: string;
   created_at: string;
+  sender?: Profile;
+};
+
+export type Thread = {
+  id: string;
+  name: string | null;
+  avatar_url: string | null;
+  is_group: boolean;
 };

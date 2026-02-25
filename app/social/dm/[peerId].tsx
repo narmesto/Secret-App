@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams, Stack } from "expo-router";
+import { router, useLocalSearchParams, Stack, useFocusEffect } from "expo-router";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   ActivityIndicator,
@@ -59,6 +59,22 @@ export default function DMConversation() {
 
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!threadId || !user?.id) return;
+
+      const markAsRead = async () => {
+        try {
+          await supabase.rpc('update_last_read_at', { p_thread_id: threadId, p_user_id: user.id });
+        } catch (error) {
+          console.error('Error marking as read:', error);
+        }
+      };
+
+      markAsRead();
+    }, [threadId, user?.id])
+  );
 
   const listRef = useRef<FlatList<DMMessage>>(null);
 
@@ -169,6 +185,8 @@ export default function DMConversation() {
         },
         (payload) => {
           const newMsg = payload.new as DMMessage;
+          if (newMsg.sender_id === user?.id) return;
+
           setMsgs((prev) => {
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];

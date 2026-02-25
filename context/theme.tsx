@@ -3,7 +3,7 @@ import { Appearance, ColorSchemeName, Platform } from "react-native";
 
 type Mode = "light" | "dark" | "system";
 
-type ThemeColors = {
+export type ThemeColors = {
   // base surfaces
   bg: string;
   card: string;

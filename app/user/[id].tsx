@@ -87,7 +87,12 @@ export default function PublicUserProfile() {
 
   const params = useLocalSearchParams();
   const viewedUserId = useMemo(() => {
-      const redirectedRef = useRef(false);
+    const raw = (params as any)?.id;
+    const v = Array.isArray(raw) ? raw[0] : raw;
+    return String(v ?? "").trim();
+  }, [params]);
+
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
     if (!viewedUserId) return;
@@ -100,11 +105,6 @@ export default function PublicUserProfile() {
 
     router.replace("/(tabs)/profile" as any);
   }, [user?.id, viewedUserId]);
-
-    const raw = (params as any)?.id;
-    const v = Array.isArray(raw) ? raw[0] : raw;
-    return String(v ?? "").trim();
-  }, [params]);
 
   const glass = isDark ? "rgba(255,255,255,0.10)" : "rgba(17,17,24,0.06)";
   const border = isDark ? "rgba(255,255,255,0.14)" : "rgba(17,17,24,0.10)";
@@ -370,11 +370,13 @@ export default function PublicUserProfile() {
           user_id: user.id,
           friend_id: viewedUserId,
           status: "accepted",
+          requested_by: user.id,
         });
         if (ins1.error) {
           const ins2 = await supabase.from("friendships").insert({
             user_id: user.id,
             friend_id: viewedUserId,
+            requested_by: user.id,
           });
           if (ins2.error) throw ins2.error;
         }
@@ -383,11 +385,13 @@ export default function PublicUserProfile() {
           requester_id: user.id,
           addressee_id: viewedUserId,
           status: "accepted",
+          requested_by: user.id,
         });
         if (ins1.error) {
           const ins2 = await supabase.from("friendships").insert({
             requester_id: user.id,
             addressee_id: viewedUserId,
+            requested_by: user.id,
           });
           if (ins2.error) throw ins2.error;
         }
@@ -397,9 +401,10 @@ export default function PublicUserProfile() {
           user_low,
           user_high,
           status: "accepted",
+          requested_by: user.id,
         });
         if (ins1.error) {
-          const ins2 = await supabase.from("friendships").insert({ user_low, user_high });
+          const ins2 = await supabase.from("friendships").insert({ user_low, user_high, requested_by: user.id });
           if (ins2.error) throw ins2.error;
         }
       }
@@ -414,19 +419,7 @@ export default function PublicUserProfile() {
     }
   }
 
-  const redirectedRef = useRef(false);
 
-useEffect(() => {
-  if (!viewedUserId) return;
-  if (!user?.id) return;
-  if (user.id !== viewedUserId) return;
-
-  // prevent repeated replaces (can happen during refresh / strict mode)
-  if (redirectedRef.current) return;
-  redirectedRef.current = true;
-
-  router.replace("/(tabs)/profile" as any);
-}, [user?.id, viewedUserId]);
 
 
   // ✅ RELIABLE ROUTES: build the actual path string

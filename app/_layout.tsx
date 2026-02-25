@@ -57,13 +57,17 @@ function RootStack() {
   );
 }
 
+import { ActionSheetProvider } from "@expo/react-native-action-sheet";
+
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <RouteGate />
-        <RootStack />
-      </AuthProvider>
-    </ThemeProvider>
+    <ActionSheetProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <RouteGate />
+          <RootStack />
+        </AuthProvider>
+      </ThemeProvider>
+    </ActionSheetProvider>
   );
 }

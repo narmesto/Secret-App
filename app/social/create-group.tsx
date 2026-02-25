@@ -19,7 +19,6 @@ import { supabase } from "../../supabase";
 import { Profile } from '@/types';
 
 type FriendRow = Omit<Profile, 'username'> & {
-  username: string;
   selected?: boolean;
   score?: number;
 };
@@ -98,8 +97,6 @@ export default function CreateGroupScreen() {
       profileRows.map((p) => ({
         id: p.id,
         display_name: p.display_name || "User",
-        // Fallback or empty string if username column is missing
-        username: p.username || "",
         avatar_url: p.avatar_url,
         selected: false,
       }))
@@ -147,11 +144,10 @@ export default function CreateGroupScreen() {
 
       if (pErr) throw new Error(pErr.message);
 
-      // 3. Navigate to DM
-      // We pass the thread.id as the peerId placeholder, but the actual threadId param is what matters.
+      // 3. Navigate to Group Chat
       router.replace({
-        pathname: "/social/dm/[peerId]" as any,
-        params: { peerId: thread.id, threadId: thread.id },
+        pathname: "/social/group/[id]" as any,
+        params: { id: thread.id },
       });
     } catch (e: any) {
       Alert.alert("Error", e.message);
@@ -167,13 +163,12 @@ export default function CreateGroupScreen() {
       if (!q) return { ...f, score: 0 };
 
       const dName = (f.display_name || '').toLowerCase();
-      const uName = f.username.toLowerCase();
 
       let score = -1; // -1 means no match
 
-      if (dName === q || uName === q) score = 100;
-      else if (dName.startsWith(q) || uName.startsWith(q)) score = 80;
-      else if (dName.includes(q) || uName.includes(q)) score = 50;
+      if (dName === q) score = 100;
+      else if (dName.startsWith(q)) score = 80;
+      else if (dName.includes(q)) score = 50;
 
       return { ...f, score };
     })
@@ -255,9 +250,6 @@ export default function CreateGroupScreen() {
                 <Text style={{ color: colors.text, fontFamily: fonts.strong }}>
                   {item.display_name}
                 </Text>
-                {item.username ? (
-                  <Text style={{ color: colors.muted, fontSize: 12 }}>@{item.username}</Text>
-                ) : null}
               </View>
               {item.selected && (
                 <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
