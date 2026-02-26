@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
   searchWrap: {
     marginHorizontal: 24,
     marginTop: 12,
-    borderRadius: 12,
+    borderRadius: 999,
     borderWidth: 1,
     paddingHorizontal: 16,
     flexDirection: "row",

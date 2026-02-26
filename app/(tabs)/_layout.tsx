@@ -35,7 +35,7 @@ export default function TabLayout() {
   const { colors, fonts, resolvedScheme } = useTheme();
   const isDark = resolvedScheme === "dark";
 
-  const active = isDark ? "#ffffff" : colors.primary;
+  const active = colors.text;
   const inactive = isDark ? "rgba(255,255,255,0.55)" : "rgba(20,20,26,0.45)";
 
   return (
